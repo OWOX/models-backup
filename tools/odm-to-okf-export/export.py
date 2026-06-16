@@ -222,12 +222,16 @@ def extract_columns(schema):
     return cols
 
 
-def render_schema_section(schema):
+def render_schema_section(schema, fk=None):
     cols = extract_columns(schema)
     if cols:
         out = ["# Schema", "", "| Column | Type | Description |", "|--------|------|-------------|"]
         for name, ftype, desc in cols:
             desc = desc.replace("|", "\\|").replace("\n", " ")
+            if fk and name in fk:
+                linked_title, linked_fname = fk[name]
+                fk_note = f"FK to [{linked_title}](./{linked_fname})"
+                desc = f"{desc} {fk_note}".strip() if desc else fk_note
             out.append(f"| `{name}` | {ftype} | {desc} |")
         return "\n".join(out)
     if schema:
@@ -235,7 +239,7 @@ def render_schema_section(schema):
     return ""
 
 
-def render_data_mart_doc(mart, api_origin, sample_rows):
+def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
     mart_id = mart.get("id", "")
     title = mart.get("title") or mart_id
     description = mart.get("description") or ""
@@ -283,7 +287,7 @@ def render_data_mart_doc(mart, api_origin, sample_rows):
         "",
     ]
 
-    schema_section = render_schema_section(mart.get("schema"))
+    schema_section = render_schema_section(mart.get("schema"), fk=fk)
     if schema_section:
         body += [schema_section, ""]
 
@@ -311,14 +315,32 @@ def now_iso():
 # Bundle writing
 # --------------------------------------------------------------------------- #
 def _build_path_lookup(marts_with_docs):
-    """Map OWOX internal path keys (underscore slugs) → (display title, filename)."""
+    """Map OWOX internal path keys (underscore slugs) → (display title, filename, pk_fields)."""
     lookup = {}
     for mart, _ in marts_with_docs:
         title = mart.get("title") or mart.get("id", "")
         fname = slugify(title, mart.get("id", "")) + ".md"
         path_key = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")
-        lookup[path_key] = (title, fname)
+        pks = [f["name"] for f in (mart.get("schema") or {}).get("fields", [])
+               if f.get("isPrimaryKey")]
+        lookup[path_key] = (title, fname, pks)
     return lookup
+
+
+def _fk_lookup(mart, path_lookup):
+    """Return dict of field_name → (linked_title, linked_fname) for FK fields."""
+    sources = (mart.get("blendedFieldsConfig") or {}).get("sources") or []
+    direct = [s for s in sources
+              if "." not in s.get("path", "") and not s.get("isExcluded")]
+    fk = {}
+    for src in direct:
+        entry = path_lookup.get(src["path"])
+        if not entry:
+            continue
+        linked_title, linked_fname, pks = entry
+        for pk in pks:
+            fk[pk] = (linked_title, linked_fname)
+    return fk
 
 
 def _render_joins_section(mart, path_lookup):
@@ -333,7 +355,7 @@ def _render_joins_section(mart, path_lookup):
         alias = (src.get("alias") or src["path"]).replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
         matched = path_lookup.get(src["path"])
         if matched:
-            _, fname = matched
+            _, fname, _ = matched
             lines.append(f"- [{alias}](./{fname})")
         else:
             lines.append(f"- {alias}")
@@ -885,7 +907,15 @@ def main():
         print(f"Fetching {mart_id} ...")
         mart = get_data_mart(api_origin, headers, mart_id)
         sample = fetch_sample_rows(api_origin, headers, mart_id, args.sample_rows)
-        marts_with_docs.append((mart, render_data_mart_doc(mart, api_origin, sample)))
+        marts_with_docs.append((mart, sample))
+
+    # Render docs after all marts are fetched so FK cross-references can be resolved
+    path_lookup_pre = _build_path_lookup([(m, None) for m, _ in marts_with_docs])
+    marts_with_docs = [
+        (mart, render_data_mart_doc(mart, api_origin, sample,
+                                    fk=_fk_lookup(mart, path_lookup_pre)))
+        for mart, sample in marts_with_docs
+    ]
 
     if os.path.isdir(args.out):
         shutil.rmtree(args.out)
