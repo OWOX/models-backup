@@ -4,7 +4,7 @@ title: "🥈 Purchases (E-Commerce)"
 description: "Describes typical Purchases Data Mart in e-commerce domain for demo puprposes."
 resource: "https://app.owox.com/api/external/http-data/data-marts/0212efac-2c7d-4bcb-aaf2-055229de4b75.ndjson"
 tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-06-15T16:01:26.000Z
+timestamp: 2026-06-16T16:01:41.000Z
 ---
 
 # 🥈 Purchases (E-Commerce)
