@@ -1,0 +1,56 @@
+---
+type: "OWOX Data Mart"
+title: "Microsoft Ads Performance"
+description: "OWOX data mart 'Microsoft Ads Performance'."
+resource: "https://app.owox.com/api/external/http-data/data-marts/a26d2865-cea5-4fe9-8cd8-a62e8e63f832.ndjson"
+tags: ["owox", "google_bigquery", "connector"]
+timestamp: 2026-05-26T20:07:10.000Z
+---
+
+# Microsoft Ads Performance
+
+## Overview
+
+- **ID:** `a26d2865-cea5-4fe9-8cd8-a62e8e63f832`
+- **Status:** PUBLISHED
+- **Definition type:** CONNECTOR
+- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
+- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/a26d2865-cea5-4fe9-8cd8-a62e8e63f832.ndjson`
+
+# Schema
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `AccountId` | STRING | The Microsoft Advertising assigned identifier of an account. |
+| `CampaignId` | STRING | The Microsoft Advertising assigned identifier of a campaign. |
+| `AdGroupId` | STRING | The Microsoft Advertising assigned identifier of an ad group. |
+| `AdId` | STRING | The Microsoft Advertising assigned identifier of an ad. |
+| `TimePeriod` | DATE | The time period of each report row. |
+| `CurrencyCode` | STRING | The account currency type. |
+| `AdDistribution` | STRING | The network where you want your ads to show. |
+| `DeviceType` | STRING | The type of device which showed ads. |
+| `DeviceOS` | STRING | The operating system of the device reported in the DeviceType column. |
+| `Network` | STRING | The entire Microsoft Advertising Network made up of Microsoft sites and select traffic, and only partner traffic. |
+| `TopVsOther` | STRING | Indicates whether the ad impression appeared in a top position or elsewhere. |
+| `BidMatchType` | STRING | The keyword bid match type. |
+| `DeliveredMatchType` | STRING | The match type used to deliver an ad. |
+| `Language` | STRING | The language of the publisher where the ad was shown. |
+| `CampaignType` | STRING | The campaign type. |
+| `AccountName` | STRING | The account name. |
+| `CampaignName` | STRING | The campaign name. |
+| `AdTitle` | STRING | The ad title. |
+| `Impressions` | INTEGER | The number of times an ad has been displayed on search results pages. |
+| `Clicks` | INTEGER | Clicks are what you pay for. |
+| `Ctr` | FLOAT | The click-through rate (CTR) is the number of times an ad was clicked, divided by the number of times the ad was shown. |
+| `Spend` | FLOAT | The cost per click (CPC) summed for each click. |
+| `Conversions` | INTEGER | The number of conversions. |
+| `AdStatus` | STRING | The ad status. |
+| `CampaignStatus` | STRING | The campaign status. |
+| `FinalUrl` | STRING | The Final URL of the ad. |
+| `VideoViews` | INTEGER | The number of times the video was played and watched for at least two continuous seconds with more than 50% of the screen in view. |
+| `VideoCompletionRate` | INTEGER | The number of completed video views divided by the total number of impressions, multiplied by 100. |
+| `BusinessName` | STRING | Depending on your responsive ad's placement, your business's name may appear in your ad. |
+| `Revenue` | STRING | The revenue optionally reported by the advertiser as a result of conversions. |
+| `CostPerConversion` | FLOAT | The cost per conversion. |
+| `AdType` | STRING | The ad type. |
+| `AdGroupName` | STRING | The ad group name. |
