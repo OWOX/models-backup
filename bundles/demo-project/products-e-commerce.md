@@ -31,3 +31,8 @@ This Data Mart provides a comprehensive catalog of e-commerce products, includin
 | `category_id` | INTEGER | Unique identifier for the high-level category the product belongs to. |
 | `page_path` | STRING | The URL relative path for the product's detail page on the website. |
 | `page_id` | INTEGER | Unique identifier for the specific web page associated with the product. |
+
+## Joins
+
+- [Product Category](./product-category-e-commerce.md)
+- [Pages](./pages-e-commerce.md)

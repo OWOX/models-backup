@@ -28,3 +28,10 @@ This data mart contains transaction-level records for all completed and in-progr
 | `order_date` | DATE | The date when the transaction was completed |
 | `order_id` | STRING | Unique identifier of the purchase transaction |
 | `status` | STRING | Current fulfillment state of the order (e.g., Completed) |
+
+## Joins
+
+- [Products](./products-e-commerce.md)
+- [Purchases](./purchases-e-commerce.md)
+- [Customers](./customers-e-commerce.md)
+- [Sessions](./sessions-e-commerce.md)

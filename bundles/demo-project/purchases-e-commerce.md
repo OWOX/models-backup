@@ -38,3 +38,8 @@ The schema is built for flexibility and scalability, supporting multi-currency t
 | `line_cost` | FLOAT | Cost of goods sold for this order line = Unit Cost × Quantity. Sum for total COGS. |
 | `line_net_revenue` | FLOAT | Revenue recognised only for Completed orders (Cancelled / Returned = 0). Sum for net  revenue. |
 | `line_net_profit` | FLOAT | Profit for Completed orders = (Item Sale Price − Unit Cost) × Quantity, else 0. Sum for  total net profit. |
+
+## Joins
+
+- [Products](./products-e-commerce.md)
+- [Orders](./orders-e-commerce.md)

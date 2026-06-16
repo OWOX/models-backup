@@ -62,3 +62,10 @@ Demo guide
 | `customer_id` | INTEGER | Unique identifier for a registered user, which is null for guest visitors. |
 | `device_category` | STRING | The type of hardware used by the visitor, such as mobile or desktop. |
 | `is_conversion` | BOOLEAN | Indicates whether the session resulted in a successful transaction or goal completion. |
+
+## Joins
+
+- [Countries](./countries-e-commerce.md)
+- [Traffic Sources](./traffic-sources-e-commerce.md)
+- [Customers](./customers-e-commerce.md)
+- [Orders](./orders-e-commerce.md)

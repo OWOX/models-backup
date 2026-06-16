@@ -35,3 +35,13 @@ This Data Mart provides a detailed log of individual e-commerce browsing session
 | `source` | STRING | The origin of the traffic, such as Google, Facebook, or direct entry. |
 | `medium` | STRING | The high-level channel type of the traffic, such as organic or cost-per-click. |
 | `campaign` | STRING | The name of the specific marketing campaign that drove the session. |
+
+## Joins
+
+- [Visitors](./visitors-e-commerce.md)
+- [Traffic Sources](./traffic-sources-e-commerce.md)
+- [Countries](./countries-e-commerce.md)
+- [Pageviews](./pageviews-e-commerce.md)
+- [Customers](./customers-e-commerce.md)
+- [Orders](./orders-e-commerce.md)
+- [Unified Ad Spend](./unified-ad-spend-e-commerce.md)

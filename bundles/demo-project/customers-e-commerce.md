@@ -28,3 +28,8 @@ This Data Mart provides a comprehensive profile of registered e-commerce custome
 | `registration_date` | DATE | The specific date when the customer account was created in the system |
 | `acquisition_traffic_source_id` | INTEGER |  |
 | `country_id` | INTEGER | The primary geographical location assigned to the customer |
+
+## Joins
+
+- [Acquisition Traffic Source](./traffic-sources-e-commerce.md)
+- [Countries](./countries-e-commerce.md)
