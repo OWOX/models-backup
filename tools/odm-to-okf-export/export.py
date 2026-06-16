@@ -310,6 +310,37 @@ def now_iso():
 # --------------------------------------------------------------------------- #
 # Bundle writing
 # --------------------------------------------------------------------------- #
+def _build_path_lookup(marts_with_docs):
+    """Map OWOX internal path keys (underscore slugs) → (display title, filename)."""
+    lookup = {}
+    for mart, _ in marts_with_docs:
+        title = mart.get("title") or mart.get("id", "")
+        fname = slugify(title, mart.get("id", "")) + ".md"
+        path_key = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")
+        lookup[path_key] = (title, fname)
+    return lookup
+
+
+def _render_joins_section(mart, path_lookup):
+    """Return a ## Joins markdown section from blendedFieldsConfig, or empty string."""
+    sources = (mart.get("blendedFieldsConfig") or {}).get("sources") or []
+    direct = [s for s in sources
+              if "." not in s.get("path", "") and not s.get("isExcluded")]
+    if not direct:
+        return ""
+    lines = ["## Joins", ""]
+    for src in direct:
+        alias = (src.get("alias") or src["path"]).replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
+        matched = path_lookup.get(src["path"])
+        if matched:
+            _, fname = matched
+            lines.append(f"- [{alias}](./{fname})")
+        else:
+            lines.append(f"- {alias}")
+    lines.append("")
+    return "\n".join(lines)
+
+
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts"):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
     project_folder: slugified OWOX project name used as the subfolder name."""
@@ -317,10 +348,15 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     os.makedirs(marts_dir, exist_ok=True)
     ts = _Raw(now_iso())
 
+    path_lookup = _build_path_lookup(marts_with_docs)
+
     index_rows = []
     for mart, doc in marts_with_docs:
         mart_id = mart.get("id", "")
         fname = slugify(mart.get("title", ""), mart_id) + ".md"
+        joins = _render_joins_section(mart, path_lookup)
+        if joins:
+            doc = doc.rstrip("\n") + "\n\n" + joins
         with open(os.path.join(marts_dir, fname), "w", encoding="utf-8") as fh:
             fh.write(doc)
         index_rows.append((mart.get("title") or mart_id, fname,
