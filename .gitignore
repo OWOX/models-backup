@@ -1,3 +1,4 @@
 .DS_Store
 .env
 bundels/
+/tools/odm-to-okf-export/__pycache__
