@@ -58,8 +58,8 @@ Demo guide
 | `session_id` | STRING | Unique identifier for an individual web or app session. |
 | `visitor_id` | STRING | Unique identifier for the anonymous visitor or browser. |
 | `traffic_source_id` | INTEGER | Numeric identifier for the marketing channel or referral source that directed the user. |
-| `country_id` | INTEGER | Numeric identifier representing the geographic country of the visitor. |
-| `customer_id` | INTEGER | Unique identifier for a registered user, which is null for guest visitors. |
+| `country_id` | INTEGER | Numeric identifier representing the geographic country of the visitor. FK to [🥈 Countries (E-Commerce)](./countries-e-commerce.md) |
+| `customer_id` | INTEGER | Unique identifier for a registered user, which is null for guest visitors. FK to [🥈 Customers (E-Commerce)](./customers-e-commerce.md) |
 | `device_category` | STRING | The type of hardware used by the visitor, such as mobile or desktop. |
 | `is_conversion` | BOOLEAN | Indicates whether the session resulted in a successful transaction or goal completion. |
 

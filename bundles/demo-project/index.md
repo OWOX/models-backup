@@ -3,7 +3,7 @@ type: "index"
 title: "Demo Project"
 description: "Index of exported OWOX data marts."
 tags: ["owox", "index"]
-timestamp: 2026-06-16T10:27:27Z
+timestamp: 2026-06-16T10:46:45Z
 ---
 
 # Demo Project

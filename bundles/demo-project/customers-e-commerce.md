@@ -27,7 +27,7 @@ This Data Mart provides a comprehensive profile of registered e-commerce custome
 | `customer_segment` | STRING | The classification of the customer based on their purchase history or value |
 | `registration_date` | DATE | The specific date when the customer account was created in the system |
 | `acquisition_traffic_source_id` | INTEGER |  |
-| `country_id` | INTEGER | The primary geographical location assigned to the customer |
+| `country_id` | INTEGER | The primary geographical location assigned to the customer FK to [🥈 Countries (E-Commerce)](./countries-e-commerce.md) |
 
 ## Joins
 
