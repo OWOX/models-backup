@@ -23,8 +23,8 @@ This data mart contains transaction-level records for all completed and in-progr
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `session_id` | STRING | Unique identifier of the session where the order was placed |
-| `customer_id` | INTEGER | Unique identifier of the customer who placed the order |
+| `session_id` | STRING | Unique identifier of the session where the order was placed FK to [🥈 Sessions (E-Commerce)](./sessions-e-commerce.md) |
+| `customer_id` | INTEGER | Unique identifier of the customer who placed the order FK to [🥈 Customers (E-Commerce)](./customers-e-commerce.md) |
 | `order_date` | DATE | The date when the transaction was completed |
 | `order_id` | STRING | Unique identifier of the purchase transaction |
 | `status` | STRING | Current fulfillment state of the order (e.g., Completed) |

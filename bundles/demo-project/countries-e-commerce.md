@@ -4,7 +4,7 @@ title: "🥈 Countries (E-Commerce)"
 description: "OWOX data mart '🥈 Countries (E-Commerce)'."
 resource: "https://app.owox.com/api/external/http-data/data-marts/bad7e127-2352-4663-8b68-cbd06a9c0eb7.ndjson"
 tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-06-04T19:16:51.000Z
+timestamp: 2026-06-16T16:23:59.000Z
 ---
 
 # 🥈 Countries (E-Commerce)

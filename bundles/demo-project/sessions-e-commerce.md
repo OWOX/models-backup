@@ -25,12 +25,12 @@ This Data Mart provides a detailed log of individual e-commerce browsing session
 |--------|------|-------------|
 | `date` | DATE | The specific date when the browsing session occurred |
 | `session_id` | STRING | Unique identifier for an individual user session |
-| `customer_id` | INTEGER | Unique identifier of the customer associated with the session |
+| `customer_id` | INTEGER | Unique identifier of the customer associated with the session FK to [🥈 Customers (E-Commerce)](./customers-e-commerce.md) |
 | `device_category` | STRING | The type of hardware device used during the session (e.g., mobile, desktop) |
 | `conversion_seed` | FLOAT | A technical value used to simulate the probability of a transaction. |
-| `visitor_id` | STRING | Unique identifier for the anonymous or recognized visitor. |
+| `visitor_id` | STRING | Unique identifier for the anonymous or recognized visitor. FK to [🥈 Visitors (E-Commerce)](./visitors-e-commerce.md) |
 | `traffic_source_id` | INTEGER | Internal numeric identifier for the marketing traffic source. |
-| `country_id` | INTEGER | Numeric identifier representing the geographic country of the visitor. |
+| `country_id` | INTEGER | Numeric identifier representing the geographic country of the visitor. FK to [🥈 Countries (E-Commerce)](./countries-e-commerce.md) |
 | `is_conversion` | BOOLEAN | Indicates whether the session resulted in a successful transaction or goal completion. |
 | `source` | STRING | The origin of the traffic, such as Google, Facebook, or direct entry. |
 | `medium` | STRING | The high-level channel type of the traffic, such as organic or cost-per-click. |
