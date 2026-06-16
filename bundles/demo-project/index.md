@@ -1,12 +1,12 @@
 ---
 type: "index"
-title: "OWOX Data Marts"
+title: "Demo Project"
 description: "Index of exported OWOX data marts."
 tags: ["owox", "index"]
-timestamp: 2026-06-16T08:05:30Z
+timestamp: 2026-06-16T09:46:04Z
 ---
 
-# OWOX Data Marts
+# Demo Project
 
 | Data Mart | Type | Storage |
 |-----------|------|---------|
@@ -22,7 +22,7 @@ timestamp: 2026-06-16T08:05:30Z
 | [Shopify Orders 2026](./shopify-orders-2026.md) | CONNECTOR | GOOGLE_BIGQUERY |
 | [TikTok Ads Insights](./tiktok-ads-insights.md) | CONNECTOR | GOOGLE_BIGQUERY |
 | [X Ads Stats](./x-ads-stats.md) | CONNECTOR | GOOGLE_BIGQUERY |
-| [\[DB\] Google Ads | Ads Stats](./db-google-ads-ads-stats.md) | CONNECTOR | DATABRICKS |
+| [\[DB\] Google Ads \| Ads Stats](./db-google-ads-ads-stats.md) | CONNECTOR | DATABRICKS |
 | [📊 Product Performance with sparklines](./product-performance-with-sparklines.md) | SQL | GOOGLE_BIGQUERY |
 | [🥇 Growth (E-Commerce)](./growth-e-commerce.md) | SQL | GOOGLE_BIGQUERY |
 | [🥈 Countries (E-Commerce)](./countries-e-commerce.md) | VIEW | GOOGLE_BIGQUERY |
@@ -37,4 +37,4 @@ timestamp: 2026-06-16T08:05:30Z
 | [🥈 Traffic Sources (E-Commerce)](./traffic-sources-e-commerce.md) | VIEW | GOOGLE_BIGQUERY |
 | [🥈 Unified Ad Spend (E-Commerce)](./unified-ad-spend-e-commerce.md) | SQL | GOOGLE_BIGQUERY |
 | [🥈 Visitors (E-Commerce)](./visitors-e-commerce.md) | VIEW | GOOGLE_BIGQUERY |
-| [🥉Reddit Ads | Insights](./reddit-ads-insights.md) | CONNECTOR | GOOGLE_BIGQUERY |
+| [🥉Reddit Ads \| Insights](./reddit-ads-insights.md) | CONNECTOR | GOOGLE_BIGQUERY |
