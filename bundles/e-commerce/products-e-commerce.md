@@ -4,7 +4,7 @@ title: "🥈 Products (E-Commerce)"
 description: "This Data Mart provides a comprehensive catalog of e-commerce products, including pricing, cost structures, and website categorization. It is primarily used for analyzing product margins and managi..."
 resource: "https://app.owox.com/api/external/http-data/data-marts/f6b33805-84ed-4469-9f7d-438e99c48696.ndjson"
 tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-06-16T07:00:41.000Z
+timestamp: 2026-07-17T07:00:28.000Z
 ---
 
 # 🥈 Products (E-Commerce)
@@ -23,7 +23,7 @@ This Data Mart provides a comprehensive catalog of e-commerce products, includin
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `product_id` | INTEGER | Unique identifier for a specific product in the catalog |
+| `product_id` | INTEGER | PK. Unique identifier for a specific product in the catalog |
 | `product_name` | STRING | The full commercial name of the product |
 | `price` | FLOAT | The current selling price of a single unit of the product |
 | `cost` | FLOAT | The acquisition cost or production expense per unit of the product |

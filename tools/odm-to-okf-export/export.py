@@ -218,7 +218,8 @@ def extract_columns(schema):
         name = f.get("name") or f.get("alias") or f.get("field") or ""
         ftype = f.get("type") or f.get("dataType") or f.get("mode") or ""
         desc = f.get("description") or f.get("title") or ""
-        cols.append((str(name), str(ftype), str(desc)))
+        is_pk = bool(f.get("isPrimaryKey"))
+        cols.append((str(name), str(ftype), str(desc), is_pk))
     return cols
 
 
@@ -226,13 +227,21 @@ def render_schema_section(schema, fk=None):
     cols = extract_columns(schema)
     if cols:
         out = ["# Schema", "", "| Column | Type | Description |", "|--------|------|-------------|"]
-        for name, ftype, desc in cols:
+        for name, ftype, desc, is_pk in cols:
             desc = desc.replace("|", "\\|").replace("\n", " ")
+            # Cell order matches the canvas serializer: "PK." marker first, then the
+            # description, then any "FK to [Target]" note. The canvas parser reads a
+            # leading "PK." as the primary key (parse.ts) — this is what lets the ERD
+            # resolve join keys against this mart as a join target.
+            parts = []
+            if is_pk:
+                parts.append("PK.")
+            if desc:
+                parts.append(desc)
             if fk and name in fk:
                 linked_title, linked_fname = fk[name]
-                fk_note = f"FK to [{linked_title}](./{linked_fname})"
-                desc = f"{desc} {fk_note}".strip() if desc else fk_note
-            out.append(f"| `{name}` | {ftype} | {desc} |")
+                parts.append(f"FK to [{linked_title}](./{linked_fname})")
+            out.append(f"| `{name}` | {ftype} | {' '.join(parts).strip()} |")
         return "\n".join(out)
     if schema:
         return "# Schema\n\n```json\n" + json.dumps(schema, indent=2, ensure_ascii=False) + "\n```"
@@ -344,19 +353,32 @@ def _fk_lookup(mart, path_lookup):
 
 
 def _render_joins_section(mart, path_lookup):
-    """Return a ## Joins markdown section from blendedFieldsConfig, or empty string."""
+    """Return a ## Joins markdown section from blendedFieldsConfig, or empty string.
+
+    Each direct join is emitted with its key condition in backticks when derivable,
+    e.g. `- [Sessions](./sessions-e-commerce.md) — \\`session_id = session_id\\``.
+    OWOX's blend config carries no explicit join columns, so the key is inferred the
+    same way the FK notes are: a join binds this mart's column to the target mart's
+    primary key of the same name. The canvas parser reads that `left = right` pair to
+    draw the join key on the ERD; a keyless link (no matching column) is left bare.
+    """
     sources = (mart.get("blendedFieldsConfig") or {}).get("sources") or []
     direct = [s for s in sources
               if "." not in s.get("path", "") and not s.get("isExcluded")]
     if not direct:
         return ""
+    local_cols = {f.get("name") for f in (mart.get("schema") or {}).get("fields", [])
+                  if isinstance(f, dict)}
     lines = ["## Joins", ""]
     for src in direct:
         alias = (src.get("alias") or src["path"]).replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
         matched = path_lookup.get(src["path"])
         if matched:
-            _, fname, _ = matched
-            lines.append(f"- [{alias}](./{fname})")
+            _, fname, target_pks = matched
+            keys = [pk for pk in target_pks if pk in local_cols]
+            cond = ", ".join(f"`{k} = {k}`" for k in keys)
+            lines.append(f"- [{alias}](./{fname}) — {cond}" if cond
+                         else f"- [{alias}](./{fname})")
         else:
             lines.append(f"- {alias}")
     lines.append("")
@@ -867,6 +889,10 @@ def main():
                    help="Generate viz.html interactive knowledge graph (default: on, $VIZ).")
     p.add_argument("--no-viz", dest="viz", action="store_false",
                    help="Skip viz.html generation.")
+    p.add_argument("--folder", default=os.environ.get("BUNDLE_FOLDER"),
+                   help="Override the bundle subfolder name (default: slugified project title).")
+    p.add_argument("--title", default=os.environ.get("BUNDLE_TITLE"),
+                   help="Override the bundle display title (default: the OWOX project title).")
     # GitHub
     p.add_argument("--push", action="store_true", help="Push the bundle to GitHub.")
     p.add_argument("--repo", default=os.environ.get("GITHUB_REPO"),
@@ -883,7 +909,8 @@ def main():
     token = exchange_for_token(api_origin, api_key_id, api_key_secret)
     headers = auth_headers(token, api_key_id)
     project_title = project_title_from_token(token)
-    project_folder = slugify(project_title, "data-marts")
+    display_title = args.title or project_title or "Data Marts"
+    project_folder = slugify(args.folder, "data-marts") if args.folder else slugify(project_title, "data-marts")
     print(f"  origin: {api_origin}")
     print(f"  project: {project_title or '(unknown)'} → folder: {project_folder}")
 
@@ -919,7 +946,7 @@ def main():
 
     if os.path.isdir(args.out):
         shutil.rmtree(args.out)
-    count = write_bundle(args.out, marts_with_docs, project_folder, project_title or "Data Marts")
+    count = write_bundle(args.out, marts_with_docs, project_folder, display_title)
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
     if args.viz:

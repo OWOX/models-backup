@@ -4,7 +4,7 @@ title: "🥇 Growth (E-Commerce)"
 description: "Demo guide"
 resource: "https://app.owox.com/api/external/http-data/data-marts/b4f59656-d52e-4ae3-847e-c34c025956bf.ndjson"
 tags: ["owox", "google_bigquery", "sql"]
-timestamp: 2026-06-09T13:01:14.000Z
+timestamp: 2026-07-16T01:07:28.000Z
 ---
 
 # 🥇 Growth (E-Commerce)
@@ -55,7 +55,7 @@ Demo guide
 | Column | Type | Description |
 |--------|------|-------------|
 | `date` | DATE | The calendar date when the session occurred. |
-| `session_id` | STRING | Unique identifier for an individual web or app session. |
+| `session_id` | STRING | PK. Unique identifier for an individual web or app session. |
 | `visitor_id` | STRING | Unique identifier for the anonymous visitor or browser. |
 | `traffic_source_id` | INTEGER | Numeric identifier for the marketing channel or referral source that directed the user. |
 | `country_id` | INTEGER | Numeric identifier representing the geographic country of the visitor. FK to [🥈 Countries (E-Commerce)](./countries-e-commerce.md) |
@@ -65,7 +65,7 @@ Demo guide
 
 ## Joins
 
-- [Countries](./countries-e-commerce.md)
+- [Countries](./countries-e-commerce.md) — `country_id = country_id`
 - [Traffic Sources](./traffic-sources-e-commerce.md)
-- [Customers](./customers-e-commerce.md)
+- [Customers](./customers-e-commerce.md) — `customer_id = customer_id`
 - [Orders](./orders-e-commerce.md)

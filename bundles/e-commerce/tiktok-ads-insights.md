@@ -23,8 +23,8 @@ TikTok Ad Insights with ad-level granularity.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `ad_id` | STRING | Ad ID |
-| `stat_time_day` | DATE | Statistics Date |
+| `ad_id` | STRING | PK. Ad ID |
+| `stat_time_day` | DATE | PK. Statistics Date |
 | `campaign_id` | STRING | Campaign ID |
 | `adgroup_id` | STRING | Ad Group ID |
 | `date_start` | DATE | Start Date |

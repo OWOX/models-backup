@@ -4,7 +4,7 @@ title: "🥈 Purchases (E-Commerce)"
 description: "Describes typical Purchases Data Mart in e-commerce domain for demo puprposes."
 resource: "https://app.owox.com/api/external/http-data/data-marts/0212efac-2c7d-4bcb-aaf2-055229de4b75.ndjson"
 tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-06-16T16:01:41.000Z
+timestamp: 2026-07-18T16:01:29.000Z
 ---
 
 # 🥈 Purchases (E-Commerce)
@@ -27,7 +27,7 @@ The schema is built for flexibility and scalability, supporting multi-currency t
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `purchase_id` | STRING | A unique identifier for each individual item row within an order |
+| `purchase_id` | STRING | PK. A unique identifier for each individual item row within an order |
 | `order_id` | STRING | The unique identifier of the transaction. Used to join with the Orders Data Mart. FK to [🥈 Orders (E-Commerce)](./orders-e-commerce.md) |
 | `product_id` | INTEGER | The unique identifier of the purchased product FK to [🥈 Products (E-Commerce)](./products-e-commerce.md) |
 | `quantity` | INTEGER | The number of units of this specific product included in the purchase line |
@@ -41,5 +41,5 @@ The schema is built for flexibility and scalability, supporting multi-currency t
 
 ## Joins
 
-- [Products](./products-e-commerce.md)
-- [Orders](./orders-e-commerce.md)
+- [Orders](./orders-e-commerce.md) — `order_id = order_id`
+- [Products](./products-e-commerce.md) — `product_id = product_id`

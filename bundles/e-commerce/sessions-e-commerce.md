@@ -4,7 +4,7 @@ title: "🥈 Sessions (E-Commerce)"
 description: "This Data Mart provides a detailed log of individual e-commerce browsing sessions, including traffic sources, device types, and conversion outcomes. It is primarily used to analyze user behavior, m..."
 resource: "https://app.owox.com/api/external/http-data/data-marts/22a66e81-1ce3-4c0a-8ead-3a154df490ab.ndjson"
 tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-06-05T16:59:39.000Z
+timestamp: 2026-07-16T02:42:23.000Z
 ---
 
 # 🥈 Sessions (E-Commerce)
@@ -24,7 +24,7 @@ This Data Mart provides a detailed log of individual e-commerce browsing session
 | Column | Type | Description |
 |--------|------|-------------|
 | `date` | DATE | The specific date when the browsing session occurred |
-| `session_id` | STRING | Unique identifier for an individual user session |
+| `session_id` | STRING | PK. Unique identifier for an individual user session |
 | `customer_id` | INTEGER | Unique identifier of the customer associated with the session FK to [🥈 Customers (E-Commerce)](./customers-e-commerce.md) |
 | `device_category` | STRING | The type of hardware device used during the session (e.g., mobile, desktop) |
 | `conversion_seed` | FLOAT | A technical value used to simulate the probability of a transaction. |
@@ -38,10 +38,10 @@ This Data Mart provides a detailed log of individual e-commerce browsing session
 
 ## Joins
 
-- [Visitors](./visitors-e-commerce.md)
+- [Visitors](./visitors-e-commerce.md) — `visitor_id = visitor_id`
 - [Traffic Sources](./traffic-sources-e-commerce.md)
-- [Countries](./countries-e-commerce.md)
+- [Countries](./countries-e-commerce.md) — `country_id = country_id`
 - [Pageviews](./pageviews-e-commerce.md)
-- [Customers](./customers-e-commerce.md)
+- [Customers](./customers-e-commerce.md) — `customer_id = customer_id`
 - [Orders](./orders-e-commerce.md)
 - [Unified Ad Spend](./unified-ad-spend-e-commerce.md)

@@ -24,8 +24,8 @@ Ad group granularity.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `ad_group_id` | STRING | Ad Group ID |
-| `date` | STRING | Date for time series data |
+| `ad_group_id` | STRING | PK. Ad Group ID |
+| `date` | STRING | PK. Date for time series data |
 | `ad_group_name` | STRING | Ad Group Name |
 | `ad_group_status` | STRING | Ad Group Status (ENABLED, PAUSED, REMOVED) |
 | `campaign_id` | STRING | Campaign ID |

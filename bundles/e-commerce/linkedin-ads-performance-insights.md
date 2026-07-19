@@ -23,9 +23,9 @@ Linkedin Ads Performance Insights with ad-level granularity.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `dateRangeStart` | DATE | Start date of the report data point. Date is specified in UTC format (YYYY-MM-DD). |
-| `dateRangeEnd` | DATE | End date of the report data point. Date is specified in UTC format (YYYY-MM-DD). |
-| `pivotValues` | STRING | The value of the pivots for a specific record returned. For example, supplying pivots of CREATIVE and CONVERSION results in a list of records, one for each creative/conversion combination. The pivotValues contain serialized URNs for the specific creative and conversion for a record. To resolve these URNs to their corresponding entities, refer to LinkedIn Marketing API URN Resolution. |
+| `dateRangeStart` | DATE | PK. Start date of the report data point. Date is specified in UTC format (YYYY-MM-DD). |
+| `dateRangeEnd` | DATE | PK. End date of the report data point. Date is specified in UTC format (YYYY-MM-DD). |
+| `pivotValues` | STRING | PK. The value of the pivots for a specific record returned. For example, supplying pivots of CREATIVE and CONVERSION results in a list of records, one for each creative/conversion combination. The pivotValues contain serialized URNs for the specific creative and conversion for a record. To resolve these URNs to their corresponding entities, refer to LinkedIn Marketing API URN Resolution. |
 | `actionClicks` | FLOAT | The count of clicks on the action button of the Sponsored Messaging ad. |
 | `adUnitClicks` | FLOAT | The count of clicks on the ad unit displayed alongside the Sponsored Messaging ad. |
 | `cardClicks` | FLOAT | Non-demographic pivots only (i.e. not MEMBER_). The number of clicks for each card of a carousel ad. The first card click of the carousel ad results in an immediate cardClick and click, whereas scrolling to other cards and clicking will count as additional cardClick. |
