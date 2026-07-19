@@ -1,12 +1,12 @@
 ---
 type: "index"
-title: "Demo Project"
+title: "E-Commerce"
 description: "Index of exported OWOX data marts."
 tags: ["owox", "index"]
-timestamp: 2026-07-19T03:42:58Z
+timestamp: 2026-07-19T03:55:38Z
 ---
 
-# Demo Project
+# E-Commerce
 
 | Data Mart | Type | Storage |
 |-----------|------|---------|
