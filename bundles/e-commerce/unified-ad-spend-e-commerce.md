@@ -4,7 +4,7 @@ title: "🥈 Unified Ad Spend (E-Commerce)"
 description: "This dataset provides a consolidated view of daily advertising expenditures and performance metrics across multiple marketing platforms. It allows users to analyze spend, clicks, and impressions at..."
 resource: "https://app.owox.com/api/external/http-data/data-marts/c36e7a4e-e6c0-49ca-99f2-d8440d475363.ndjson"
 tags: ["owox", "google_bigquery", "sql"]
-timestamp: 2026-06-16T15:28:23.000Z
+timestamp: 2026-07-18T07:00:24.000Z
 ---
 
 # 🥈 Unified Ad Spend (E-Commerce)

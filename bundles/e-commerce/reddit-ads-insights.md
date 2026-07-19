@@ -21,8 +21,8 @@ timestamp: 2026-05-19T15:45:40.000Z
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `ad_id` | STRING | The ID of the ad. |
-| `date` | DATE | The date for this metric. |
+| `ad_id` | STRING | PK. The ID of the ad. |
+| `date` | DATE | PK. The date for this metric. |
 | `clicks` | INTEGER | The number of clicks detected for this report period. |
 | `cpc` | FLOAT | The cost-per-click for this period. |
 | `post_id` | STRING | The unique identifier of the post. |

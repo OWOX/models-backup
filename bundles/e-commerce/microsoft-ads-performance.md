@@ -21,21 +21,21 @@ timestamp: 2026-05-26T20:07:10.000Z
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `AccountId` | STRING | The Microsoft Advertising assigned identifier of an account. |
-| `CampaignId` | STRING | The Microsoft Advertising assigned identifier of a campaign. |
-| `AdGroupId` | STRING | The Microsoft Advertising assigned identifier of an ad group. |
-| `AdId` | STRING | The Microsoft Advertising assigned identifier of an ad. |
-| `TimePeriod` | DATE | The time period of each report row. |
-| `CurrencyCode` | STRING | The account currency type. |
-| `AdDistribution` | STRING | The network where you want your ads to show. |
-| `DeviceType` | STRING | The type of device which showed ads. |
-| `DeviceOS` | STRING | The operating system of the device reported in the DeviceType column. |
-| `Network` | STRING | The entire Microsoft Advertising Network made up of Microsoft sites and select traffic, and only partner traffic. |
-| `TopVsOther` | STRING | Indicates whether the ad impression appeared in a top position or elsewhere. |
-| `BidMatchType` | STRING | The keyword bid match type. |
-| `DeliveredMatchType` | STRING | The match type used to deliver an ad. |
-| `Language` | STRING | The language of the publisher where the ad was shown. |
-| `CampaignType` | STRING | The campaign type. |
+| `AccountId` | STRING | PK. The Microsoft Advertising assigned identifier of an account. |
+| `CampaignId` | STRING | PK. The Microsoft Advertising assigned identifier of a campaign. |
+| `AdGroupId` | STRING | PK. The Microsoft Advertising assigned identifier of an ad group. |
+| `AdId` | STRING | PK. The Microsoft Advertising assigned identifier of an ad. |
+| `TimePeriod` | DATE | PK. The time period of each report row. |
+| `CurrencyCode` | STRING | PK. The account currency type. |
+| `AdDistribution` | STRING | PK. The network where you want your ads to show. |
+| `DeviceType` | STRING | PK. The type of device which showed ads. |
+| `DeviceOS` | STRING | PK. The operating system of the device reported in the DeviceType column. |
+| `Network` | STRING | PK. The entire Microsoft Advertising Network made up of Microsoft sites and select traffic, and only partner traffic. |
+| `TopVsOther` | STRING | PK. Indicates whether the ad impression appeared in a top position or elsewhere. |
+| `BidMatchType` | STRING | PK. The keyword bid match type. |
+| `DeliveredMatchType` | STRING | PK. The match type used to deliver an ad. |
+| `Language` | STRING | PK. The language of the publisher where the ad was shown. |
+| `CampaignType` | STRING | PK. The campaign type. |
 | `AccountName` | STRING | The account name. |
 | `CampaignName` | STRING | The campaign name. |
 | `AdTitle` | STRING | The ad title. |

@@ -3,12 +3,12 @@ type: "index"
 title: "Demo Project"
 description: "OKF bundle generated from OWOX Data Marts."
 tags: ["owox", "index"]
-timestamp: 2026-06-16T18:58:38Z
+timestamp: 2026-07-19T03:42:58Z
 ---
 
 # Demo Project
 
-Generated 2026-06-16T18:58:38Z.
+Generated 2026-07-19T03:42:58Z.
 
-- [Demo Project](./demo-project/index.md) — 28 concept(s)
+- [Demo Project](./e-commerce/index.md) — 24 concept(s)
 

@@ -4,7 +4,7 @@ title: "Purchases List"
 description: "This dataset contains detailed transaction records at the line-item level, including product quantities, pricing, and profitability metrics. It is primarily used to analyze sales performance, calcu..."
 resource: "https://app.owox.com/api/external/http-data/data-marts/d57170ef-8de5-4475-bbfb-61b20a72b051.ndjson"
 tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-06-15T12:47:41.000Z
+timestamp: 2026-07-16T11:08:35.000Z
 ---
 
 # Purchases List
@@ -23,7 +23,7 @@ This dataset contains detailed transaction records at the line-item level, inclu
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `purchase_id` | STRING | Unique identifier for each individual item line within a transaction. |
+| `purchase_id` | STRING | PK. Unique identifier for each individual item line within a transaction. |
 | `order_id` | STRING | Unique identifier for the overall customer order or transaction. |
 | `product_id` | INTEGER | Unique numeric identifier for the specific product purchased. |
 | `quantity` | INTEGER | The number of units of the product included in the purchase line. |

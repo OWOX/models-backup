@@ -21,9 +21,9 @@ timestamp: 2026-04-20T15:49:56.000Z
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `id` | STRING | The unique identifier for the stats record. |
-| `date` | STRING | The date for which the statistics were collected. |
-| `placement` | STRING | The placement type (ALL_ON_TWITTER or PUBLISHER_NETWORK). |
+| `id` | STRING | PK. The unique identifier for the stats record. |
+| `date` | STRING | PK. The date for which the statistics were collected. |
+| `placement` | STRING | PK. The placement type (ALL_ON_TWITTER or PUBLISHER_NETWORK). |
 | `impressions` | INTEGER | Number of impressions. |
 | `tweets_send` | INTEGER | Number of tweets sent. |
 | `likes` | INTEGER | Number of likes. |

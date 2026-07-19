@@ -4,7 +4,7 @@ title: "🥈 Visitors (E-Commerce)"
 description: "This dataset provides a comprehensive overview of website visitor behavior and acquisition history at the individual visitor level. It tracks engagement metrics like total sessions and visit dates ..."
 resource: "https://app.owox.com/api/external/http-data/data-marts/13e040df-a062-4f38-803b-54a7e0b75a3e.ndjson"
 tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-06-05T19:26:56.000Z
+timestamp: 2026-07-17T14:28:27.000Z
 ---
 
 # 🥈 Visitors (E-Commerce)
@@ -23,7 +23,7 @@ This dataset provides a comprehensive overview of website visitor behavior and a
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `visitor_id` | STRING | Unique identifier for the website visitor. |
+| `visitor_id` | STRING | PK. Unique identifier for the website visitor. |
 | `linked_customer_id` | INTEGER | Identifier of the registered customer account associated with this visitor, if applicable. |
 | `first_seen_date` | DATE | The date when the visitor first interacted with the website. |
 | `last_seen_date` | DATE | The date of the most recent recorded interaction from this visitor. |
