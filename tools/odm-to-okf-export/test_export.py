@@ -82,6 +82,55 @@ class RenderJoinsTests(unittest.TestCase):
         out = export._render_joins_section(self.mart, self.path_lookup, self.index)
         self.assertLess(out.index("Customers"), out.index("Products"))
 
+    def test_multi_condition_join_renders_all_pairs_comma_separated(self):
+        # Composite keys are real (a live OWOX mart has a two-field primary key), so a
+        # join_index entry with more than one pair must render every pair, in order,
+        # comma-separated — not just the first one.
+        mart = {
+            "id": "mart-orders",
+            "title": "Orders",
+            "schema": {"fields": [
+                {"name": "order_id", "type": "STRING", "isPrimaryKey": True},
+                {"name": "warehouse_id", "type": "STRING"},
+                {"name": "region_code", "type": "STRING"},
+            ]},
+            "blendedFieldsConfig": {"sources": [
+                {"path": "warehouses", "alias": "Warehouses", "fields": {}},
+            ]},
+        }
+        path_lookup = {
+            "warehouses": ("Warehouses", "warehouses.md", ["warehouse_id", "region_code"]),
+        }
+        join_index = {
+            "warehouses": [("warehouse_id", "warehouse_id"), ("region_code", "region_code")],
+        }
+        out = export._render_joins_section(mart, path_lookup, join_index)
+        self.assertIn(
+            "- [Warehouses](./warehouses.md) — `warehouse_id = warehouse_id`, `region_code = region_code`",
+            out,
+        )
+
+    def test_matched_but_keyless_source_renders_bare_link(self):
+        # The source's path IS in path_lookup (it's a real, matched join target), but there's
+        # no join_index entry for it and no local column name-matches the target's primary
+        # key — so it must fall back to a bare link with no " — " suffix.
+        mart = {
+            "id": "mart-orders",
+            "title": "Orders",
+            "schema": {"fields": [
+                {"name": "order_id", "type": "STRING", "isPrimaryKey": True},
+            ]},
+            "blendedFieldsConfig": {"sources": [
+                {"path": "warehouses", "alias": "Warehouses", "fields": {}},
+            ]},
+        }
+        path_lookup = {
+            "warehouses": ("Warehouses", "warehouses.md", ["warehouse_id"]),
+        }
+        out = export._render_joins_section(mart, path_lookup, {})
+        self.assertIn("- [Warehouses](./warehouses.md)\n", out)
+        self.assertNotIn(" — ", out)
+
 
 if __name__ == "__main__":
     unittest.main()
