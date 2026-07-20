@@ -381,19 +381,30 @@ def _build_path_lookup(marts_with_docs):
     return lookup
 
 
-def _fk_lookup(mart, path_lookup):
-    """Return dict of field_name → (linked_title, linked_fname) for FK fields."""
+def _fk_lookup(mart, path_lookup, join_index=None):
+    """Return dict of field_name → (linked_title, linked_fname) for FK fields.
+
+    The FK note belongs on the column that actually carries the foreign key, which the
+    relationship graph names explicitly. Without a graph we fall back to the older
+    assumption that the FK column is named like the target's primary key.
+    """
     sources = (mart.get("blendedFieldsConfig") or {}).get("sources") or []
     direct = [s for s in sources
               if "." not in s.get("path", "") and not s.get("isExcluded")]
+    join_index = join_index or {}
     fk = {}
     for src in direct:
         entry = path_lookup.get(src["path"])
         if not entry:
             continue
         linked_title, linked_fname, pks = entry
-        for pk in pks:
-            fk[pk] = (linked_title, linked_fname)
+        pairs = join_index.get(src["path"])
+        if pairs:
+            for source_field, _target_field in pairs:
+                fk[source_field] = (linked_title, linked_fname)
+        else:
+            for pk in pks:
+                fk[pk] = (linked_title, linked_fname)
     return fk
 
 

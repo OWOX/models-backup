@@ -132,5 +132,33 @@ class RenderJoinsTests(unittest.TestCase):
         self.assertNotIn(" — ", out)
 
 
+class FkLookupTests(unittest.TestCase):
+    def setUp(self):
+        self.mart = {
+            "id": "mart-orders",
+            "blendedFieldsConfig": {"sources": [
+                {"path": "customers", "alias": "Customers", "fields": {}},
+                {"path": "products", "alias": "Products", "fields": {}},
+            ]},
+        }
+        self.path_lookup = {
+            "customers": ("Customers", "customers.md", ["customer_id"]),
+            "products": ("Products", "products.md", ["product_code"]),
+        }
+        self.index = export.build_join_index(load_fixture("graph_orders.json"), "mart-orders")
+
+    def test_annotates_the_actual_source_column(self):
+        fk = export._fk_lookup(self.mart, self.path_lookup, self.index)
+        self.assertEqual(fk["sku"], ("Products", "products.md"))
+
+    def test_does_not_annotate_the_target_pk_name(self):
+        fk = export._fk_lookup(self.mart, self.path_lookup, self.index)
+        self.assertNotIn("product_code", fk)
+
+    def test_falls_back_to_pk_names_without_index(self):
+        fk = export._fk_lookup(self.mart, self.path_lookup, {})
+        self.assertEqual(fk["customer_id"], ("Customers", "customers.md"))
+
+
 if __name__ == "__main__":
     unittest.main()
