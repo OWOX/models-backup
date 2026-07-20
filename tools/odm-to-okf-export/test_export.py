@@ -291,6 +291,38 @@ class BuildVizDataTests(unittest.TestCase):
         data = export.build_viz_data(self.tmp)
         self.assertIn("## Overview", data["bodies"]["saas/account"])
 
+    def test_mart_doc_without_overview_section(self):
+        # Test graceful degradation when a mart doc has valid frontmatter but no ## Overview section
+        d = os.path.join(self.tmp, "e-commerce")
+        with open(os.path.join(d, "no_overview.md"), "w", encoding="utf-8") as fh:
+            fh.write(
+                f'---\ntype: "OWOX Data Mart"\ntitle: "No Overview"\n'
+                f'description: "Mart without overview."\n---\n\n'
+                f"# No Overview\n\n"
+                f"Just some content here.\n")
+        data = export.build_viz_data(self.tmp)
+        by_id = {n["data"]["id"]: n["data"] for n in data["nodes"]}
+        # Node should exist even without ## Overview section
+        self.assertIn("e-commerce/no_overview", by_id)
+        # Definition type should fall back to "Data Mart" when not in overview
+        self.assertEqual(by_id["e-commerce/no_overview"]["type"], "Data Mart")
+
+    def test_mart_doc_without_frontmatter(self):
+        # Test graceful degradation when a mart doc has no frontmatter at all
+        d = os.path.join(self.tmp, "saas")
+        with open(os.path.join(d, "no_frontmatter.md"), "w", encoding="utf-8") as fh:
+            fh.write(
+                f"# No Frontmatter\n\n"
+                f"This document starts directly with a heading.\n"
+                f"- **Definition type:** VIEW\n"
+                f"- **Storage:** BigQuery (GOOGLE_BIGQUERY)\n")
+        data = export.build_viz_data(self.tmp)
+        by_id = {n["data"]["id"]: n["data"] for n in data["nodes"]}
+        # Node should exist even without frontmatter
+        self.assertIn("saas/no_frontmatter", by_id)
+        # Label should fall back to filename stem when no title in frontmatter
+        self.assertEqual(by_id["saas/no_frontmatter"]["label"], "no_frontmatter")
+
 
 if __name__ == "__main__":
     unittest.main()

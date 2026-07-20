@@ -831,6 +831,8 @@ _STORAGE_COLOR = "#8b5cf6"
 
 
 _OVERVIEW_RE = re.compile(r"^- \*\*(?P<key>[^:*]+):\*\*\s*(?P<value>.*)$", re.M)
+# Known limitation: writer emits "- **Storage:** {title} ({type})" and strips trailing " ()" when type is empty,
+# so a storage title ending in parenthesised all-caps (e.g. "BigQuery (TYPE)") is indistinguishable from title+type.
 _STORAGE_RE = re.compile(r"^(?P<title>.*?)\s*\((?P<type>[A-Z_]+)\)$")
 
 
