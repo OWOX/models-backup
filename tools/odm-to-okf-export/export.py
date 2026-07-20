@@ -707,11 +707,17 @@ window.BUNDLE = OWOX_BUNDLE_JSON;
   const inBundle = (el) => el.data.bundle === currentBundle;
 
   const typeSelect = document.getElementById("filter-type");
-  for (const t of bundle.types) {
-    const opt = document.createElement("option");
-    opt.value = t; opt.textContent = t;
-    typeSelect.appendChild(opt);
+
+  function populateTypeFilter() {
+    typeSelect.innerHTML = '<option value="">All types</option>';
+    const types = new Set(bundle.nodes.filter(inBundle).map((n) => n.data.type));
+    for (const t of [...types].sort()) {
+      const opt = document.createElement("option");
+      opt.value = t; opt.textContent = t;
+      typeSelect.appendChild(opt);
+    }
   }
+  populateTypeFilter();
 
   const backlinks = {};
   for (const edge of bundle.edges) {
@@ -752,9 +758,12 @@ window.BUNDLE = OWOX_BUNDLE_JSON;
   bundleSelect.addEventListener("change", (e) => {
     currentBundle = e.target.value;
     document.title = currentBundle + " — OKF Viewer";
+    document.getElementById("search").value = "";
     clearSelection();
     cy.elements().remove();
     cy.add([...bundle.nodes.filter(inBundle), ...bundle.edges.filter(inBundle)]);
+    cy.elements().removeClass("dim");
+    populateTypeFilter();
     cy.layout({ name: document.getElementById("layout").value, animate: false, padding: 30 }).run();
     cy.fit(null, 30);
   });
