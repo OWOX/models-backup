@@ -140,6 +140,78 @@ def get_data_mart(api_origin, headers, mart_id):
     return _http_json("GET", api_origin + DATA_MART_GET_PATH.format(id=mart_id), headers=headers)
 
 
+def list_data_storages(api_origin, headers):
+    """Return [{id, title, type}, ...] for the project's data storages."""
+    data = _http_json("GET", f"{api_origin}/api/data-storages", headers=headers)
+    return data.get("items", data) if isinstance(data, dict) else (data or [])
+
+
+def filter_marts_by_storage(marts, storages, storage_id):
+    """Keep only marts sitting on `storage_id`.
+
+    /api/data-marts returns storage as {type, title} with no id and offers no storage
+    filter, so we match on the (title, type) pair resolved from /api/data-storages. When
+    that pair is not unique the match is unsafe: the caller must re-check each kept mart
+    against the detailed /api/data-marts/{id}, which does carry storage.id.
+    """
+    target = next((s for s in storages if s.get("id") == storage_id), None)
+    if target is None:
+        known = ", ".join(f"{s.get('id')} ({s.get('title')})" for s in storages)
+        sys.exit(f"Storage {storage_id} not found in this project. Available: {known}")
+    key = (target.get("title"), target.get("type"))
+    ambiguous = sum(1 for s in storages
+                    if (s.get("title"), s.get("type")) == key) > 1
+    kept = [m for m in marts
+            if ((m.get("storage") or {}).get("title"),
+                (m.get("storage") or {}).get("type")) == key]
+    return kept, ambiguous
+
+
+RELATIONSHIPS_GRAPH_PATH = "/api/data-marts/{id}/relationships/graph"
+
+
+def get_relationships_graph(api_origin, headers, mart_id):
+    """Fetch a mart's relationship graph. Returns an empty graph if the API refuses,
+    so that export still works for keys or projects without relationship access."""
+    try:
+        return _http_json("GET", api_origin + RELATIONSHIPS_GRAPH_PATH.format(id=mart_id),
+                          headers=headers)
+    except urllib.error.HTTPError as exc:
+        print(f"  ! relationships unavailable for {mart_id} (HTTP {exc.code}); "
+              f"falling back to name matching.")
+        return {"nodes": []}
+
+
+def build_join_index(graph, mart_id):
+    """Map a mart's direct joins to their real key pairs.
+
+    Returns {path_key: [(source_field, target_field), ...]} where path_key matches
+    blendedFieldsConfig's `path` for the same join. Only edges leaving `mart_id` are
+    kept; cycle stubs and deeper hops are skipped, and each relationship id is used once.
+    """
+    index, seen = {}, set()
+    for node in (graph or {}).get("nodes") or []:
+        if not isinstance(node, dict) or node.get("isCycleStub"):
+            continue
+        rel = node.get("relationship") or {}
+        rel_id = rel.get("id")
+        if not rel_id or rel_id in seen:
+            continue
+        if (rel.get("sourceDataMart") or {}).get("id") != mart_id:
+            continue
+        path = node.get("aliasPath") or rel.get("targetAlias") or ""
+        if not path or "." in path:
+            continue
+        pairs = [(c["sourceFieldName"], c["targetFieldName"])
+                 for c in rel.get("joinConditions") or []
+                 if isinstance(c, dict) and c.get("sourceFieldName") and c.get("targetFieldName")]
+        if not pairs:
+            continue
+        seen.add(rel_id)
+        index[path] = pairs
+    return index
+
+
 def fetch_sample_rows(api_origin, headers, mart_id, n):
     """Stream the .ndjson endpoint and stop after n rows (does not download all)."""
     if n <= 0:
@@ -336,37 +408,48 @@ def _build_path_lookup(marts_with_docs):
     return lookup
 
 
-def _fk_lookup(mart, path_lookup):
-    """Return dict of field_name → (linked_title, linked_fname) for FK fields."""
+def _fk_lookup(mart, path_lookup, join_index=None):
+    """Return dict of field_name → (linked_title, linked_fname) for FK fields.
+
+    The FK note belongs on the column that actually carries the foreign key, which the
+    relationship graph names explicitly. Without a graph we fall back to the older
+    assumption that the FK column is named like the target's primary key.
+    """
     sources = (mart.get("blendedFieldsConfig") or {}).get("sources") or []
     direct = [s for s in sources
               if "." not in s.get("path", "") and not s.get("isExcluded")]
+    join_index = join_index or {}
     fk = {}
     for src in direct:
         entry = path_lookup.get(src["path"])
         if not entry:
             continue
         linked_title, linked_fname, pks = entry
-        for pk in pks:
-            fk[pk] = (linked_title, linked_fname)
+        pairs = join_index.get(src["path"])
+        if pairs:
+            for source_field, _target_field in pairs:
+                fk[source_field] = (linked_title, linked_fname)
+        else:
+            for pk in pks:
+                fk[pk] = (linked_title, linked_fname)
     return fk
 
 
-def _render_joins_section(mart, path_lookup):
+def _render_joins_section(mart, path_lookup, join_index=None):
     """Return a ## Joins markdown section from blendedFieldsConfig, or empty string.
 
-    Each direct join is emitted with its key condition in backticks when derivable,
-    e.g. `- [Sessions](./sessions-e-commerce.md) — \\`session_id = session_id\\``.
-    OWOX's blend config carries no explicit join columns, so the key is inferred the
-    same way the FK notes are: a join binds this mart's column to the target mart's
-    primary key of the same name. The canvas parser reads that `left = right` pair to
-    draw the join key on the ERD; a keyless link (no matching column) is left bare.
+    Join keys come from the mart's relationship graph (`joinConditions`), which is the
+    only place the real column pair is recorded — a join may bind columns with different
+    names (`sku = product_code`). When a source has no relationship (blend-only sources,
+    or an API that withheld the graph) we fall back to the older heuristic: a column named
+    exactly like the target's primary key. A link with neither stays bare, as before.
     """
     sources = (mart.get("blendedFieldsConfig") or {}).get("sources") or []
     direct = [s for s in sources
               if "." not in s.get("path", "") and not s.get("isExcluded")]
     if not direct:
         return ""
+    join_index = join_index or {}
     local_cols = {f.get("name") for f in (mart.get("schema") or {}).get("fields", [])
                   if isinstance(f, dict)}
     lines = ["## Joins", ""]
@@ -375,8 +458,10 @@ def _render_joins_section(mart, path_lookup):
         matched = path_lookup.get(src["path"])
         if matched:
             _, fname, target_pks = matched
-            keys = [pk for pk in target_pks if pk in local_cols]
-            cond = ", ".join(f"`{k} = {k}`" for k in keys)
+            pairs = join_index.get(src["path"])
+            if not pairs:
+                pairs = [(pk, pk) for pk in target_pks if pk in local_cols]
+            cond = ", ".join(f"`{left} = {right}`" for left, right in pairs)
             lines.append(f"- [{alias}](./{fname}) — {cond}" if cond
                          else f"- [{alias}](./{fname})")
         else:
@@ -385,12 +470,15 @@ def _render_joins_section(mart, path_lookup):
     return "\n".join(lines)
 
 
-def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts"):
+def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
+                 join_indexes=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
-    project_folder: slugified OWOX project name used as the subfolder name."""
+    project_folder: slugified OWOX project name used as the subfolder name.
+    join_indexes: {mart_id: build_join_index(...)} for real join keys."""
     marts_dir = os.path.join(out_dir, project_folder)
     os.makedirs(marts_dir, exist_ok=True)
     ts = _Raw(now_iso())
+    join_indexes = join_indexes or {}
 
     path_lookup = _build_path_lookup(marts_with_docs)
 
@@ -398,7 +486,7 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     for mart, doc in marts_with_docs:
         mart_id = mart.get("id", "")
         fname = slugify(mart.get("title", ""), mart_id) + ".md"
-        joins = _render_joins_section(mart, path_lookup)
+        joins = _render_joins_section(mart, path_lookup, join_indexes.get(mart_id))
         if joins:
             doc = doc.rstrip("\n") + "\n\n" + joins
         with open(os.path.join(marts_dir, fname), "w", encoding="utf-8") as fh:
@@ -874,6 +962,8 @@ def main():
     p.add_argument("--api-key", default=os.environ.get("OWOX_API_KEY"),
                    help="OWOX API key (owox_key_...). Defaults to $OWOX_API_KEY.")
     p.add_argument("--ids", default="", help="Comma-separated data-mart IDs (default: all).")
+    p.add_argument("--storage", default=os.environ.get("STORAGE_ID"),
+                   help="Export only data marts on this data-storage id ($STORAGE_ID).")
     p.add_argument("--out", default="bundels", help="Output directory (default: bundels).")
     p.add_argument("--sample-rows", type=int, default=0,
                    help="Embed first N rows as preview per mart (default: 0 = none).")
@@ -916,6 +1006,8 @@ def main():
 
     if args.ids.strip():
         ids = [i.strip() for i in args.ids.split(",") if i.strip()]
+        if args.storage:
+            print("  --storage is ignored when --ids is given.")
     else:
         print("Listing data marts...")
         all_marts = list_data_marts(api_origin, headers)
@@ -926,27 +1018,41 @@ def main():
                 print(f"  Skipped {skipped} data mart(s) not available for reporting "
                       f"(pass --no-shared-only to include them).")
             all_marts = filtered
+        if args.storage:
+            storages = list_data_storages(api_origin, headers)
+            all_marts, needs_detail = filter_marts_by_storage(all_marts, storages, args.storage)
+            if needs_detail:
+                print("  Storage title is ambiguous; verifying each mart individually...")
+                all_marts = [m for m in all_marts
+                             if (get_data_mart(api_origin, headers, m["id"]).get("storage") or {}
+                                 ).get("id") == args.storage]
+            print(f"  {len(all_marts)} data mart(s) on storage {args.storage}.")
         ids = [m["id"] for m in all_marts]
     print(f"  {len(ids)} data mart(s) to export.")
 
     marts_with_docs = []
+    join_indexes = {}
     for mart_id in ids:
         print(f"Fetching {mart_id} ...")
         mart = get_data_mart(api_origin, headers, mart_id)
         sample = fetch_sample_rows(api_origin, headers, mart_id, args.sample_rows)
+        graph = get_relationships_graph(api_origin, headers, mart_id)
+        join_indexes[mart_id] = build_join_index(graph, mart_id)
         marts_with_docs.append((mart, sample))
 
     # Render docs after all marts are fetched so FK cross-references can be resolved
     path_lookup_pre = _build_path_lookup([(m, None) for m, _ in marts_with_docs])
     marts_with_docs = [
         (mart, render_data_mart_doc(mart, api_origin, sample,
-                                    fk=_fk_lookup(mart, path_lookup_pre)))
+                                    fk=_fk_lookup(mart, path_lookup_pre,
+                                                  join_indexes.get(mart.get("id")))))
         for mart, sample in marts_with_docs
     ]
 
     if os.path.isdir(args.out):
         shutil.rmtree(args.out)
-    count = write_bundle(args.out, marts_with_docs, project_folder, display_title)
+    count = write_bundle(args.out, marts_with_docs, project_folder, display_title,
+                         join_indexes=join_indexes)
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
     if args.viz:

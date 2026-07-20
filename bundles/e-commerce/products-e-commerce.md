@@ -4,7 +4,7 @@ title: "🥈 Products (E-Commerce)"
 description: "This Data Mart provides a comprehensive catalog of e-commerce products, including pricing, cost structures, and website categorization. It is primarily used for analyzing product margins and managi..."
 resource: "https://app.owox.com/api/external/http-data/data-marts/f6b33805-84ed-4469-9f7d-438e99c48696.ndjson"
 tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-17T07:00:28.000Z
+timestamp: 2026-07-19T07:00:17.000Z
 ---
 
 # 🥈 Products (E-Commerce)
@@ -28,11 +28,11 @@ This Data Mart provides a comprehensive catalog of e-commerce products, includin
 | `price` | FLOAT | The current selling price of a single unit of the product |
 | `cost` | FLOAT | The acquisition cost or production expense per unit of the product |
 | `sub_category` | STRING | The specific sub-classification of the product within its broader category. |
-| `category_id` | INTEGER | Unique identifier for the high-level category the product belongs to. |
+| `category_id` | INTEGER | Unique identifier for the high-level category the product belongs to. FK to [🥈 Product Category (E-Commerce)](./product-category-e-commerce.md) |
 | `page_path` | STRING | The URL relative path for the product's detail page on the website. |
-| `page_id` | INTEGER | Unique identifier for the specific web page associated with the product. |
+| `page_id` | INTEGER | Unique identifier for the specific web page associated with the product. FK to [🥈 Pages (E-Commerce)](./pages-e-commerce.md) |
 
 ## Joins
 
-- [Product Category](./product-category-e-commerce.md)
-- [Pages](./pages-e-commerce.md)
+- [Product Category](./product-category-e-commerce.md) — `category_id = category_id`
+- [Pages](./pages-e-commerce.md) — `page_id = page_id`

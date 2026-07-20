@@ -26,10 +26,10 @@ This Data Mart provides a comprehensive profile of registered e-commerce custome
 | `customer_id` | INTEGER | PK. Unique identifier for an individual registered customer |
 | `customer_segment` | STRING | The classification of the customer based on their purchase history or value |
 | `registration_date` | DATE | The specific date when the customer account was created in the system |
-| `acquisition_traffic_source_id` | INTEGER |  |
+| `acquisition_traffic_source_id` | INTEGER | FK to [🥈 Traffic Sources (E-Commerce)](./traffic-sources-e-commerce.md) |
 | `country_id` | INTEGER | The primary geographical location assigned to the customer FK to [🥈 Countries (E-Commerce)](./countries-e-commerce.md) |
 
 ## Joins
 
-- [Acquisition Traffic Source](./traffic-sources-e-commerce.md)
+- [Acquisition Traffic Source](./traffic-sources-e-commerce.md) — `acquisition_traffic_source_id = traffic_source_id`
 - [Countries](./countries-e-commerce.md) — `country_id = country_id`

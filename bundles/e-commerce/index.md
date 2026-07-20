@@ -3,7 +3,7 @@ type: "index"
 title: "E-Commerce"
 description: "Index of exported OWOX data marts."
 tags: ["owox", "index"]
-timestamp: 2026-07-19T03:55:38Z
+timestamp: 2026-07-20T12:10:35Z
 ---
 
 # E-Commerce
