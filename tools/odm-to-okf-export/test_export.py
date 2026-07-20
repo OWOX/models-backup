@@ -2,6 +2,8 @@
 import importlib.util
 import json
 import os
+import shutil
+import tempfile
 import unittest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -206,6 +208,120 @@ class StorageFilterTests(unittest.TestCase):
         kept, needs_detail = export.filter_marts_by_storage(self.marts, storages, "st-1")
         self.assertTrue(needs_detail)
         self.assertEqual([m["id"] for m in kept], ["m1"])
+
+
+class CollectBundlesTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp)
+        self._write("e-commerce", "E-Commerce", ["a.md", "b.md"])
+        self._write("saas", "SaaS", ["x.md"])
+
+    def _write(self, folder, title, marts):
+        d = os.path.join(self.tmp, folder)
+        os.makedirs(d)
+        rows = "\n".join(f"| [{m[:-3]}](./{m}) | VIEW | GOOGLE_BIGQUERY |" for m in marts)
+        with open(os.path.join(d, "index.md"), "w", encoding="utf-8") as fh:
+            fh.write(f'---\ntype: "index"\ntitle: "{title}"\n---\n\n# {title}\n\n'
+                     f"| Data Mart | Type | Storage |\n|---|---|---|\n{rows}\n")
+        for m in marts:
+            with open(os.path.join(d, m), "w", encoding="utf-8") as fh:
+                fh.write(f'---\ntype: "OWOX Data Mart"\ntitle: "{m[:-3]}"\n---\n\n# {m[:-3]}\n')
+
+    def test_lists_every_bundle_sorted(self):
+        found = export.collect_bundles(self.tmp)
+        self.assertEqual([f for f, _, _ in found], ["e-commerce", "saas"])
+
+    def test_reads_title_and_counts_concepts(self):
+        found = dict((f, (t, n)) for f, t, n in export.collect_bundles(self.tmp))
+        self.assertEqual(found["e-commerce"], ("E-Commerce", 2))
+        self.assertEqual(found["saas"], ("SaaS", 1))
+
+    def test_ignores_files_and_folders_without_index(self):
+        os.makedirs(os.path.join(self.tmp, "not-a-bundle"))
+        with open(os.path.join(self.tmp, "viz.html"), "w") as fh:
+            fh.write("x")
+        self.assertEqual([f for f, _, _ in export.collect_bundles(self.tmp)],
+                         ["e-commerce", "saas"])
+
+
+class BuildVizDataTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp)
+        for folder, title, mart in (("e-commerce", "E-Commerce", "orders"),
+                                    ("saas", "SaaS", "account")):
+            d = os.path.join(self.tmp, folder)
+            os.makedirs(d)
+            with open(os.path.join(d, "index.md"), "w", encoding="utf-8") as fh:
+                fh.write(f'---\ntype: "index"\ntitle: "{title}"\n---\n\n# {title}\n')
+            with open(os.path.join(d, f"{mart}.md"), "w", encoding="utf-8") as fh:
+                fh.write(
+                    f'---\ntype: "OWOX Data Mart"\ntitle: "{mart.title()}"\n'
+                    f'description: "Docs for {mart}."\n'
+                    f'resource: "https://app.owox.com/x.ndjson"\n'
+                    f'tags: ["owox", "view"]\n---\n\n'
+                    f"# {mart.title()}\n\n## Overview\n\n"
+                    f"- **ID:** `id-{mart}`\n- **Status:** PUBLISHED\n"
+                    f"- **Definition type:** VIEW\n"
+                    f"- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)\n")
+
+    def test_lists_all_bundles(self):
+        data = export.build_viz_data(self.tmp)
+        self.assertEqual(data["bundles"], ["e-commerce", "saas"])
+
+    def test_nodes_are_tagged_with_their_bundle(self):
+        data = export.build_viz_data(self.tmp)
+        by_id = {n["data"]["id"]: n["data"] for n in data["nodes"]}
+        self.assertEqual(by_id["saas/account"]["bundle"], "saas")
+        self.assertEqual(by_id["saas/account"]["type"], "VIEW")
+
+    def test_storage_nodes_are_per_bundle(self):
+        data = export.build_viz_data(self.tmp)
+        ids = {n["data"]["id"] for n in data["nodes"]}
+        self.assertIn("e-commerce/storage/bigquery-common", ids)
+        self.assertIn("saas/storage/bigquery-common", ids)
+
+    def test_edges_link_mart_to_its_own_bundle_storage(self):
+        data = export.build_viz_data(self.tmp)
+        pairs = {(e["data"]["source"], e["data"]["target"]) for e in data["edges"]}
+        self.assertIn(("saas/account", "saas/storage/bigquery-common"), pairs)
+
+    def test_body_is_the_markdown_file_content(self):
+        data = export.build_viz_data(self.tmp)
+        self.assertIn("## Overview", data["bodies"]["saas/account"])
+
+    def test_mart_doc_without_overview_section(self):
+        # Test graceful degradation when a mart doc has valid frontmatter but no ## Overview section
+        d = os.path.join(self.tmp, "e-commerce")
+        with open(os.path.join(d, "no_overview.md"), "w", encoding="utf-8") as fh:
+            fh.write(
+                f'---\ntype: "OWOX Data Mart"\ntitle: "No Overview"\n'
+                f'description: "Mart without overview."\n---\n\n'
+                f"# No Overview\n\n"
+                f"Just some content here.\n")
+        data = export.build_viz_data(self.tmp)
+        by_id = {n["data"]["id"]: n["data"] for n in data["nodes"]}
+        # Node should exist even without ## Overview section
+        self.assertIn("e-commerce/no_overview", by_id)
+        # Definition type should fall back to "Data Mart" when not in overview
+        self.assertEqual(by_id["e-commerce/no_overview"]["type"], "Data Mart")
+
+    def test_mart_doc_without_frontmatter(self):
+        # Test graceful degradation when a mart doc has no frontmatter at all
+        d = os.path.join(self.tmp, "saas")
+        with open(os.path.join(d, "no_frontmatter.md"), "w", encoding="utf-8") as fh:
+            fh.write(
+                f"# No Frontmatter\n\n"
+                f"This document starts directly with a heading.\n"
+                f"- **Definition type:** VIEW\n"
+                f"- **Storage:** BigQuery (GOOGLE_BIGQUERY)\n")
+        data = export.build_viz_data(self.tmp)
+        by_id = {n["data"]["id"]: n["data"] for n in data["nodes"]}
+        # Node should exist even without frontmatter
+        self.assertIn("saas/no_frontmatter", by_id)
+        # Label should fall back to filename stem when no title in frontmatter
+        self.assertEqual(by_id["saas/no_frontmatter"]["label"], "no_frontmatter")
 
 
 if __name__ == "__main__":

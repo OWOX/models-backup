@@ -470,6 +470,38 @@ def _render_joins_section(mart, path_lookup, join_index=None):
     return "\n".join(lines)
 
 
+def read_frontmatter(path):
+    """Parse the leading --- block of an OKF markdown file into a flat dict of strings."""
+    fields = {}
+    with open(path, encoding="utf-8") as fh:
+        if fh.readline().strip() != "---":
+            return fields
+        for line in fh:
+            line = line.rstrip("\n")
+            if line.strip() == "---":
+                break
+            key, sep, value = line.partition(":")
+            if not sep:
+                continue
+            fields[key.strip()] = value.strip().strip('"')
+    return fields
+
+
+def collect_bundles(out_dir):
+    """Return [(folder, title, concept_count), ...] for every bundle folder in out_dir."""
+    found = []
+    for folder in sorted(os.listdir(out_dir)):
+        bundle_dir = os.path.join(out_dir, folder)
+        index_path = os.path.join(bundle_dir, "index.md")
+        if not os.path.isdir(bundle_dir) or not os.path.isfile(index_path):
+            continue
+        title = read_frontmatter(index_path).get("title") or folder
+        count = len([f for f in os.listdir(bundle_dir)
+                     if f.endswith(".md") and f != "index.md"])
+        found.append((folder, title, count))
+    return found
+
+
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
                  join_indexes=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
@@ -511,14 +543,17 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     with open(os.path.join(marts_dir, "index.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(di) + "\n")
 
-    # bundle root index.md
+    # bundle root index.md — a catalog of every bundle in this directory
+    bundles = collect_bundles(out_dir)
     root = [render_frontmatter({
-        "type": "index", "title": project_title,
-        "description": f"OKF bundle generated from OWOX Data Marts.",
+        "type": "index", "title": "OKF Bundles",
+        "description": "OKF bundles generated from OWOX Data Marts.",
         "tags": ["owox", "index"], "timestamp": ts,
-    }), "", f"# {project_title}", "",
-        f"Generated {ts}.", "",
-        f"- [{project_title}](./{project_folder}/index.md) — {len(index_rows)} concept(s)", ""]
+    }), "", "# OKF Bundles", "",
+        f"Generated {ts}.", ""]
+    for folder, title, count in bundles:
+        root.append(f"- [{title}](./{folder}/index.md) — {count} concept(s)")
+    root.append("")
     with open(os.path.join(out_dir, "index.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(root) + "\n")
 
@@ -550,6 +585,11 @@ header {
   border-bottom: 1px solid #e2e8f0; flex-shrink: 0;
 }
 .title strong { font-size: 16px; margin-right: 8px; }
+#bundle-select {
+  font-size: 16px; font-weight: 700; color: #0f172a;
+  border: 1px solid #cbd5e1; border-radius: 4px;
+  background: #fff; padding: 4px 8px; margin-right: 8px;
+}
 .muted { color: #64748b; font-size: 12px; }
 .controls { display: flex; gap: 8px; }
 .controls input, .controls select, .controls button {
@@ -607,7 +647,7 @@ a.external { color: #3b82f6; word-break: break-all; }
 <body>
 <header>
   <div class="title">
-    <strong id="bundle-name"></strong>
+    <select id="bundle-select"></select>
     <span class="muted">OKF Bundle</span>
   </div>
   <div class="controls">
@@ -647,21 +687,37 @@ a.external { color: #3b82f6; word-break: break-all; }
   </div>
 </main>
 <script>
-window.BUNDLE_NAME = "OWOX_BUNDLE_NAME";
 window.BUNDLE = OWOX_BUNDLE_JSON;
 </script>
 <script>
 (function () {
   const bundle = window.BUNDLE;
-  document.title = window.BUNDLE_NAME + " — OKF Viewer";
-  document.getElementById("bundle-name").textContent = window.BUNDLE_NAME;
+  const bundleNames = bundle.bundles || [];
+  let currentBundle = bundleNames[0] || "";
+
+  const bundleSelect = document.getElementById("bundle-select");
+  for (const name of bundleNames) {
+    const opt = document.createElement("option");
+    opt.value = name; opt.textContent = name;
+    bundleSelect.appendChild(opt);
+  }
+  bundleSelect.value = currentBundle;
+  document.title = currentBundle + " — OKF Viewer";
+
+  const inBundle = (el) => el.data.bundle === currentBundle;
 
   const typeSelect = document.getElementById("filter-type");
-  for (const t of bundle.types) {
-    const opt = document.createElement("option");
-    opt.value = t; opt.textContent = t;
-    typeSelect.appendChild(opt);
+
+  function populateTypeFilter() {
+    typeSelect.innerHTML = '<option value="">All types</option>';
+    const types = new Set(bundle.nodes.filter(inBundle).map((n) => n.data.type));
+    for (const t of [...types].sort()) {
+      const opt = document.createElement("option");
+      opt.value = t; opt.textContent = t;
+      typeSelect.appendChild(opt);
+    }
   }
+  populateTypeFilter();
 
   const backlinks = {};
   for (const edge of bundle.edges) {
@@ -674,7 +730,7 @@ window.BUNDLE = OWOX_BUNDLE_JSON;
 
   const cy = cytoscape({
     container: document.getElementById("graph"),
-    elements: [...bundle.nodes, ...bundle.edges],
+    elements: [...bundle.nodes.filter(inBundle), ...bundle.edges.filter(inBundle)],
     style: [
       { selector: "node", style: {
           "background-color": "data(color)", "label": "data(label)",
@@ -698,6 +754,19 @@ window.BUNDLE = OWOX_BUNDLE_JSON;
 
   cy.on("tap", "node", (evt) => showDetail(evt.target.id()));
   cy.on("tap", (evt) => { if (evt.target === cy) clearSelection(); });
+
+  bundleSelect.addEventListener("change", (e) => {
+    currentBundle = e.target.value;
+    document.title = currentBundle + " — OKF Viewer";
+    document.getElementById("search").value = "";
+    clearSelection();
+    cy.elements().remove();
+    cy.add([...bundle.nodes.filter(inBundle), ...bundle.edges.filter(inBundle)]);
+    cy.elements().removeClass("dim");
+    populateTypeFilter();
+    cy.layout({ name: document.getElementById("layout").value, animate: false, padding: 30 }).run();
+    cy.fit(null, 30);
+  });
 
   document.getElementById("layout").addEventListener("change", (e) => {
     cy.layout({ name: e.target.value, animate: false, padding: 30 }).run();
@@ -795,52 +864,88 @@ _TYPE_COLORS = {
 _STORAGE_COLOR = "#8b5cf6"
 
 
-def render_viz_html(out_dir, project_folder, marts_with_docs, api_origin):
-    nodes, edges, bodies, storage_map = [], [], {}, {}
-    types_seen = set()
+_OVERVIEW_RE = re.compile(r"^- \*\*(?P<key>[^:*]+):\*\*\s*(?P<value>.*)$", re.M)
+# Known limitation: writer emits "- **Storage:** {title} ({type})" and strips trailing " ()" when type is empty,
+# so a storage title ending in parenthesised all-caps (e.g. "BigQuery (TYPE)") is indistinguishable from title+type.
+_STORAGE_RE = re.compile(r"^(?P<title>.*?)\s*\((?P<type>[A-Z_]+)\)$")
 
-    for mart, doc in marts_with_docs:
-        mart_id = mart.get("id", "")
-        title = mart.get("title") or mart_id
-        definition_type = mart.get("definitionType") or "Data Mart"
-        storage = mart.get("storage") or {}
-        storage_title = storage.get("title") or ""
-        storage_type = storage.get("type") or ""
-        description = (mart.get("description") or "").strip()
-        short_desc = description.splitlines()[0][:200] if description else ""
-        data_url = f"{api_origin}{DATA_NDJSON_PATH.format(id=mart_id)}"
-        node_id = f"{project_folder}/{slugify(title, mart_id)}"
-        tags = ["owox"] + ([storage_type.lower()] if storage_type else []) + ([definition_type.lower()] if definition_type else [])
 
-        types_seen.add(definition_type)
-        nodes.append({"data": {
-            "id": node_id, "label": title, "type": definition_type,
-            "description": short_desc, "resource": data_url,
-            "tags": tags, "color": _TYPE_COLORS.get(definition_type, "#94a3b8"), "size": 32,
-        }})
-        bodies[node_id] = doc
+def _read_concept(path):
+    """Read one exported mart doc back into the fields the viz needs."""
+    with open(path, encoding="utf-8") as fh:
+        body = fh.read()
+    front = read_frontmatter(path)
+    overview = {m.group("key").strip(): m.group("value").strip()
+                for m in _OVERVIEW_RE.finditer(body)}
+    storage_raw = overview.get("Storage", "")
+    match = _STORAGE_RE.match(storage_raw)
+    storage_title = match.group("title") if match else storage_raw
+    storage_type = match.group("type") if match else ""
+    tags_raw = front.get("tags", "")
+    tags = [t.strip().strip('"') for t in tags_raw.strip("[]").split(",") if t.strip()]
+    return {
+        "title": front.get("title") or os.path.basename(path)[:-3],
+        "description": front.get("description", ""),
+        "resource": front.get("resource", ""),
+        "tags": tags,
+        "definition_type": overview.get("Definition type", "") or "Data Mart",
+        "storage_title": storage_title,
+        "storage_type": storage_type,
+        "body": body,
+    }
 
-        if storage_title and storage_title not in storage_map:
-            storage_id = f"storage/{slugify(storage_title, 'storage')}"
-            storage_map[storage_title] = storage_id
+
+def build_viz_data(out_dir):
+    """Build the viewer payload from every bundle folder on disk.
+
+    Reading back what was just written keeps one code path for the bundle exported in
+    this run and for the ones already in the gallery. Storage nodes are namespaced per
+    bundle so each bundle's graph stands alone when selected.
+    """
+    nodes, edges, bodies, types_seen = [], [], {}, set()
+    bundles = []
+    for folder, _title, _count in collect_bundles(out_dir):
+        bundles.append(folder)
+        bundle_dir = os.path.join(out_dir, folder)
+        storage_nodes = set()
+        for fname in sorted(os.listdir(bundle_dir)):
+            if not fname.endswith(".md") or fname == "index.md":
+                continue
+            concept = _read_concept(os.path.join(bundle_dir, fname))
+            node_id = f"{folder}/{fname[:-3]}"
+            definition_type = concept["definition_type"]
+            types_seen.add(definition_type)
             nodes.append({"data": {
-                "id": storage_id, "label": storage_title,
-                "type": storage_type or "Storage", "description": "",
-                "resource": "", "tags": ["storage"],
-                "color": _STORAGE_COLOR, "size": 40,
+                "id": node_id, "label": concept["title"], "type": definition_type,
+                "description": concept["description"], "resource": concept["resource"],
+                "tags": concept["tags"], "bundle": folder,
+                "color": _TYPE_COLORS.get(definition_type, "#94a3b8"), "size": 32,
             }})
-            types_seen.add(storage_type or "Storage")
-            bodies[storage_id] = ""
+            bodies[node_id] = concept["body"]
 
-        if storage_title:
-            edges.append({"data": {"source": node_id, "target": storage_map[storage_title]}})
+            if concept["storage_title"]:
+                storage_id = f"{folder}/storage/{slugify(concept['storage_title'], 'storage')}"
+                if storage_id not in storage_nodes:
+                    storage_nodes.add(storage_id)
+                    storage_type = concept["storage_type"] or "Storage"
+                    types_seen.add(storage_type)
+                    nodes.append({"data": {
+                        "id": storage_id, "label": concept["storage_title"],
+                        "type": storage_type, "description": "", "resource": "",
+                        "tags": ["storage"], "bundle": folder,
+                        "color": _STORAGE_COLOR, "size": 40,
+                    }})
+                    bodies[storage_id] = ""
+                edges.append({"data": {"source": node_id, "target": storage_id,
+                                       "bundle": folder}})
 
-    bundle = {"nodes": nodes, "edges": edges, "bodies": bodies, "types": sorted(types_seen)}
-    html = (
-        _VIZ_TEMPLATE
-        .replace("OWOX_BUNDLE_NAME", project_folder)
-        .replace("OWOX_BUNDLE_JSON", json.dumps(bundle, ensure_ascii=False))
-    )
+    return {"bundles": bundles, "nodes": nodes, "edges": edges,
+            "bodies": bodies, "types": sorted(t for t in types_seen if t)}
+
+
+def render_viz_html(out_dir):
+    bundle = build_viz_data(out_dir)
+    html = _VIZ_TEMPLATE.replace("OWOX_BUNDLE_JSON", json.dumps(bundle, ensure_ascii=False))
     with open(os.path.join(out_dir, "viz.html"), "w", encoding="utf-8") as fh:
         fh.write(html)
 
@@ -1049,15 +1154,18 @@ def main():
         for mart, sample in marts_with_docs
     ]
 
-    if os.path.isdir(args.out):
-        shutil.rmtree(args.out)
+    # Only this bundle's folder is rewritten — sibling bundles in the gallery stay put.
+    bundle_dir = os.path.join(args.out, project_folder)
+    if os.path.isdir(bundle_dir):
+        shutil.rmtree(bundle_dir)
     count = write_bundle(args.out, marts_with_docs, project_folder, display_title,
                          join_indexes=join_indexes)
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
     if args.viz:
-        render_viz_html(args.out, project_folder, marts_with_docs, api_origin)
-        print(f"Wrote viz.html to {args.out}/viz.html")
+        render_viz_html(args.out)
+        print(f"Wrote viz.html to {args.out}/viz.html "
+              f"({len(collect_bundles(args.out))} bundle(s))")
 
     if args.push:
         if not args.repo or not args.token:
