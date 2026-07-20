@@ -245,5 +245,52 @@ class CollectBundlesTests(unittest.TestCase):
                          ["e-commerce", "saas"])
 
 
+class BuildVizDataTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp)
+        for folder, title, mart in (("e-commerce", "E-Commerce", "orders"),
+                                    ("saas", "SaaS", "account")):
+            d = os.path.join(self.tmp, folder)
+            os.makedirs(d)
+            with open(os.path.join(d, "index.md"), "w", encoding="utf-8") as fh:
+                fh.write(f'---\ntype: "index"\ntitle: "{title}"\n---\n\n# {title}\n')
+            with open(os.path.join(d, f"{mart}.md"), "w", encoding="utf-8") as fh:
+                fh.write(
+                    f'---\ntype: "OWOX Data Mart"\ntitle: "{mart.title()}"\n'
+                    f'description: "Docs for {mart}."\n'
+                    f'resource: "https://app.owox.com/x.ndjson"\n'
+                    f'tags: ["owox", "view"]\n---\n\n'
+                    f"# {mart.title()}\n\n## Overview\n\n"
+                    f"- **ID:** `id-{mart}`\n- **Status:** PUBLISHED\n"
+                    f"- **Definition type:** VIEW\n"
+                    f"- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)\n")
+
+    def test_lists_all_bundles(self):
+        data = export.build_viz_data(self.tmp)
+        self.assertEqual(data["bundles"], ["e-commerce", "saas"])
+
+    def test_nodes_are_tagged_with_their_bundle(self):
+        data = export.build_viz_data(self.tmp)
+        by_id = {n["data"]["id"]: n["data"] for n in data["nodes"]}
+        self.assertEqual(by_id["saas/account"]["bundle"], "saas")
+        self.assertEqual(by_id["saas/account"]["type"], "VIEW")
+
+    def test_storage_nodes_are_per_bundle(self):
+        data = export.build_viz_data(self.tmp)
+        ids = {n["data"]["id"] for n in data["nodes"]}
+        self.assertIn("e-commerce/storage/bigquery-common", ids)
+        self.assertIn("saas/storage/bigquery-common", ids)
+
+    def test_edges_link_mart_to_its_own_bundle_storage(self):
+        data = export.build_viz_data(self.tmp)
+        pairs = {(e["data"]["source"], e["data"]["target"]) for e in data["edges"]}
+        self.assertIn(("saas/account", "saas/storage/bigquery-common"), pairs)
+
+    def test_body_is_the_markdown_file_content(self):
+        data = export.build_viz_data(self.tmp)
+        self.assertIn("## Overview", data["bodies"]["saas/account"])
+
+
 if __name__ == "__main__":
     unittest.main()
