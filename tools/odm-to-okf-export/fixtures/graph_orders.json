@@ -39,6 +39,32 @@
         "targetAlias": "orders",
         "joinConditions": [{"sourceFieldName": "customer_id", "targetFieldName": "customer_id"}]
       }
+    },
+    {
+      "aliasPath": "regions",
+      "depth": 2,
+      "isCycleStub": false,
+      "isBlocked": false,
+      "relationship": {
+        "id": "rel-3",
+        "sourceDataMart": {"id": "mart-customers", "title": "Customers"},
+        "targetDataMart": {"id": "mart-regions", "title": "Regions"},
+        "targetAlias": "regions",
+        "joinConditions": [{"sourceFieldName": "region_id", "targetFieldName": "region_id"}]
+      }
+    },
+    {
+      "aliasPath": "customers.region",
+      "depth": 2,
+      "isCycleStub": false,
+      "isBlocked": false,
+      "relationship": {
+        "id": "rel-4",
+        "sourceDataMart": {"id": "mart-orders", "title": "Orders"},
+        "targetDataMart": {"id": "mart-regions", "title": "Regions"},
+        "targetAlias": "region",
+        "joinConditions": [{"sourceFieldName": "region_code", "targetFieldName": "region_code"}]
+      }
     }
   ]
 }

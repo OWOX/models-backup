@@ -31,6 +31,14 @@ class BuildJoinIndexTests(unittest.TestCase):
         idx = export.build_join_index(self.graph, "mart-orders")
         self.assertNotIn("orders", idx)
 
+    def test_skips_foreign_source_mart(self):
+        idx = export.build_join_index(self.graph, "mart-orders")
+        self.assertNotIn("regions", idx)
+
+    def test_skips_dotted_multi_hop_path(self):
+        idx = export.build_join_index(self.graph, "mart-orders")
+        self.assertNotIn("customers.region", idx)
+
     def test_empty_graph_is_empty_index(self):
         self.assertEqual(export.build_join_index({"nodes": []}, "mart-orders"), {})
         self.assertEqual(export.build_join_index(None, "mart-orders"), {})
