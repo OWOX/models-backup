@@ -4,7 +4,7 @@ title: "🥈 Orders (E-Commerce)"
 description: "This data mart contains transaction-level records for all completed and in-progress orders, enabling analysis of customer purchasing behavior, order timelines, and fulfillment status. Each row repr..."
 resource: "https://app.owox.com/api/external/http-data/data-marts/d565c4cb-5f68-480e-917d-c1709b59ae02.ndjson"
 tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-18T07:00:52.000Z
+timestamp: 2026-07-20T07:01:01.000Z
 ---
 
 # 🥈 Orders (E-Commerce)
@@ -26,12 +26,12 @@ This data mart contains transaction-level records for all completed and in-progr
 | `session_id` | STRING | Unique identifier of the session where the order was placed FK to [🥈 Sessions (E-Commerce)](./sessions-e-commerce.md) |
 | `customer_id` | INTEGER | Unique identifier of the customer who placed the order FK to [🥈 Customers (E-Commerce)](./customers-e-commerce.md) |
 | `order_date` | DATE | The date when the transaction was completed |
-| `order_id` | STRING | PK. Unique identifier of the purchase transaction |
+| `order_id` | STRING | PK. Unique identifier of the purchase transaction FK to [🥈 Purchases (E-Commerce)](./purchases-e-commerce.md) |
 | `status` | STRING | Current fulfillment state of the order (e.g., Completed) |
 
 ## Joins
 
 - [Products](./products-e-commerce.md)
-- [Purchases](./purchases-e-commerce.md)
+- [Purchases](./purchases-e-commerce.md) — `order_id = order_id`
 - [Customers](./customers-e-commerce.md) — `customer_id = customer_id`
 - [Sessions](./sessions-e-commerce.md) — `session_id = session_id`

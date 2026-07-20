@@ -4,7 +4,7 @@ title: "Shopify Orders 2026"
 description: "OWOX data mart 'Shopify Orders 2026'."
 resource: "https://app.owox.com/api/external/http-data/data-marts/48537173-e031-4349-b42c-696a1dcd72e2.ndjson"
 tags: ["owox", "google_bigquery", "connector"]
-timestamp: 2026-07-18T13:00:46.000Z
+timestamp: 2026-07-20T10:01:07.000Z
 ---
 
 # Shopify Orders 2026

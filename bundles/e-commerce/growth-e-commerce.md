@@ -55,9 +55,9 @@ Demo guide
 | Column | Type | Description |
 |--------|------|-------------|
 | `date` | DATE | The calendar date when the session occurred. |
-| `session_id` | STRING | PK. Unique identifier for an individual web or app session. |
+| `session_id` | STRING | PK. Unique identifier for an individual web or app session. FK to [🥈 Orders (E-Commerce)](./orders-e-commerce.md) |
 | `visitor_id` | STRING | Unique identifier for the anonymous visitor or browser. |
-| `traffic_source_id` | INTEGER | Numeric identifier for the marketing channel or referral source that directed the user. |
+| `traffic_source_id` | INTEGER | Numeric identifier for the marketing channel or referral source that directed the user. FK to [🥈 Traffic Sources (E-Commerce)](./traffic-sources-e-commerce.md) |
 | `country_id` | INTEGER | Numeric identifier representing the geographic country of the visitor. FK to [🥈 Countries (E-Commerce)](./countries-e-commerce.md) |
 | `customer_id` | INTEGER | Unique identifier for a registered user, which is null for guest visitors. FK to [🥈 Customers (E-Commerce)](./customers-e-commerce.md) |
 | `device_category` | STRING | The type of hardware used by the visitor, such as mobile or desktop. |
@@ -66,6 +66,6 @@ Demo guide
 ## Joins
 
 - [Countries](./countries-e-commerce.md) — `country_id = country_id`
-- [Traffic Sources](./traffic-sources-e-commerce.md)
+- [Traffic Sources](./traffic-sources-e-commerce.md) — `traffic_source_id = traffic_source_id`
 - [Customers](./customers-e-commerce.md) — `customer_id = customer_id`
-- [Orders](./orders-e-commerce.md)
+- [Orders](./orders-e-commerce.md) — `session_id = session_id`

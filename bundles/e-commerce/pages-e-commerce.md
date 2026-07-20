@@ -23,11 +23,11 @@ This dataset provides a comprehensive directory of all web pages within the e-co
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `page_id` | INTEGER | Unique numerical identifier for each specific page on the website. |
+| `page_id` | INTEGER | Unique numerical identifier for each specific page on the website. FK to [🥈 Pageviews (E-Commerce)](./pageviews-e-commerce.md) |
 | `page_path` | STRING | The URL path of the page relative to the domain root. |
 | `page_title` | STRING | The human-readable name or display title of the web page. |
 | `page_type` | STRING | Functional category of the page, such as Product, Category, or Checkout. |
 
 ## Joins
 
-- [Pageviews](./pageviews-e-commerce.md)
+- [Pageviews](./pageviews-e-commerce.md) — `page_id = page_id`
