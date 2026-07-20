@@ -470,12 +470,15 @@ def _render_joins_section(mart, path_lookup, join_index=None):
     return "\n".join(lines)
 
 
-def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts"):
+def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
+                 join_indexes=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
-    project_folder: slugified OWOX project name used as the subfolder name."""
+    project_folder: slugified OWOX project name used as the subfolder name.
+    join_indexes: {mart_id: build_join_index(...)} for real join keys."""
     marts_dir = os.path.join(out_dir, project_folder)
     os.makedirs(marts_dir, exist_ok=True)
     ts = _Raw(now_iso())
+    join_indexes = join_indexes or {}
 
     path_lookup = _build_path_lookup(marts_with_docs)
 
@@ -483,7 +486,7 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     for mart, doc in marts_with_docs:
         mart_id = mart.get("id", "")
         fname = slugify(mart.get("title", ""), mart_id) + ".md"
-        joins = _render_joins_section(mart, path_lookup)
+        joins = _render_joins_section(mart, path_lookup, join_indexes.get(mart_id))
         if joins:
             doc = doc.rstrip("\n") + "\n\n" + joins
         with open(os.path.join(marts_dir, fname), "w", encoding="utf-8") as fh:
@@ -1028,23 +1031,28 @@ def main():
     print(f"  {len(ids)} data mart(s) to export.")
 
     marts_with_docs = []
+    join_indexes = {}
     for mart_id in ids:
         print(f"Fetching {mart_id} ...")
         mart = get_data_mart(api_origin, headers, mart_id)
         sample = fetch_sample_rows(api_origin, headers, mart_id, args.sample_rows)
+        graph = get_relationships_graph(api_origin, headers, mart_id)
+        join_indexes[mart_id] = build_join_index(graph, mart_id)
         marts_with_docs.append((mart, sample))
 
     # Render docs after all marts are fetched so FK cross-references can be resolved
     path_lookup_pre = _build_path_lookup([(m, None) for m, _ in marts_with_docs])
     marts_with_docs = [
         (mart, render_data_mart_doc(mart, api_origin, sample,
-                                    fk=_fk_lookup(mart, path_lookup_pre)))
+                                    fk=_fk_lookup(mart, path_lookup_pre,
+                                                  join_indexes.get(mart.get("id")))))
         for mart, sample in marts_with_docs
     ]
 
     if os.path.isdir(args.out):
         shutil.rmtree(args.out)
-    count = write_bundle(args.out, marts_with_docs, project_folder, display_title)
+    count = write_bundle(args.out, marts_with_docs, project_folder, display_title,
+                         join_indexes=join_indexes)
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
     if args.viz:
