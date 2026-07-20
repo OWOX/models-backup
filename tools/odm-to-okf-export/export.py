@@ -585,6 +585,11 @@ header {
   border-bottom: 1px solid #e2e8f0; flex-shrink: 0;
 }
 .title strong { font-size: 16px; margin-right: 8px; }
+#bundle-select {
+  font-size: 16px; font-weight: 700; color: #0f172a;
+  border: 1px solid #cbd5e1; border-radius: 4px;
+  background: #fff; padding: 4px 8px; margin-right: 8px;
+}
 .muted { color: #64748b; font-size: 12px; }
 .controls { display: flex; gap: 8px; }
 .controls input, .controls select, .controls button {
@@ -642,7 +647,7 @@ a.external { color: #3b82f6; word-break: break-all; }
 <body>
 <header>
   <div class="title">
-    <strong id="bundle-name"></strong>
+    <select id="bundle-select"></select>
     <span class="muted">OKF Bundle</span>
   </div>
   <div class="controls">
@@ -682,14 +687,24 @@ a.external { color: #3b82f6; word-break: break-all; }
   </div>
 </main>
 <script>
-window.BUNDLE_NAME = "OWOX_BUNDLE_NAME";
 window.BUNDLE = OWOX_BUNDLE_JSON;
 </script>
 <script>
 (function () {
   const bundle = window.BUNDLE;
-  document.title = window.BUNDLE_NAME + " — OKF Viewer";
-  document.getElementById("bundle-name").textContent = window.BUNDLE_NAME;
+  const bundleNames = bundle.bundles || [];
+  let currentBundle = bundleNames[0] || "";
+
+  const bundleSelect = document.getElementById("bundle-select");
+  for (const name of bundleNames) {
+    const opt = document.createElement("option");
+    opt.value = name; opt.textContent = name;
+    bundleSelect.appendChild(opt);
+  }
+  bundleSelect.value = currentBundle;
+  document.title = currentBundle + " — OKF Viewer";
+
+  const inBundle = (el) => el.data.bundle === currentBundle;
 
   const typeSelect = document.getElementById("filter-type");
   for (const t of bundle.types) {
@@ -709,7 +724,7 @@ window.BUNDLE = OWOX_BUNDLE_JSON;
 
   const cy = cytoscape({
     container: document.getElementById("graph"),
-    elements: [...bundle.nodes, ...bundle.edges],
+    elements: [...bundle.nodes.filter(inBundle), ...bundle.edges.filter(inBundle)],
     style: [
       { selector: "node", style: {
           "background-color": "data(color)", "label": "data(label)",
@@ -733,6 +748,16 @@ window.BUNDLE = OWOX_BUNDLE_JSON;
 
   cy.on("tap", "node", (evt) => showDetail(evt.target.id()));
   cy.on("tap", (evt) => { if (evt.target === cy) clearSelection(); });
+
+  bundleSelect.addEventListener("change", (e) => {
+    currentBundle = e.target.value;
+    document.title = currentBundle + " — OKF Viewer";
+    clearSelection();
+    cy.elements().remove();
+    cy.add([...bundle.nodes.filter(inBundle), ...bundle.edges.filter(inBundle)]);
+    cy.layout({ name: document.getElementById("layout").value, animate: false, padding: 30 }).run();
+    cy.fit(null, 30);
+  });
 
   document.getElementById("layout").addEventListener("change", (e) => {
     cy.layout({ name: e.target.value, animate: false, padding: 30 }).run();
