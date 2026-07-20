@@ -44,5 +44,44 @@ class BuildJoinIndexTests(unittest.TestCase):
         self.assertEqual(export.build_join_index(None, "mart-orders"), {})
 
 
+class RenderJoinsTests(unittest.TestCase):
+    def setUp(self):
+        self.mart = {
+            "id": "mart-orders",
+            "title": "Orders",
+            "schema": {"fields": [
+                {"name": "order_id", "type": "STRING", "isPrimaryKey": True},
+                {"name": "customer_id", "type": "STRING"},
+                {"name": "sku", "type": "STRING"},
+            ]},
+            "blendedFieldsConfig": {"sources": [
+                {"path": "customers", "alias": "Customers", "fields": {}},
+                {"path": "products", "alias": "Products", "fields": {}},
+            ]},
+        }
+        self.path_lookup = {
+            "customers": ("Customers", "customers.md", ["customer_id"]),
+            "products": ("Products", "products.md", ["product_code"]),
+        }
+        self.index = export.build_join_index(load_fixture("graph_orders.json"), "mart-orders")
+
+    def test_non_matching_names_get_keys_from_the_api(self):
+        out = export._render_joins_section(self.mart, self.path_lookup, self.index)
+        self.assertIn("- [Products](./products.md) — `sku = product_code`", out)
+
+    def test_matching_names_still_render(self):
+        out = export._render_joins_section(self.mart, self.path_lookup, self.index)
+        self.assertIn("- [Customers](./customers.md) — `customer_id = customer_id`", out)
+
+    def test_falls_back_to_name_matching_without_index(self):
+        out = export._render_joins_section(self.mart, self.path_lookup, {})
+        self.assertIn("- [Customers](./customers.md) — `customer_id = customer_id`", out)
+        self.assertIn("- [Products](./products.md)\n", out)
+
+    def test_source_order_is_preserved(self):
+        out = export._render_joins_section(self.mart, self.path_lookup, self.index)
+        self.assertLess(out.index("Customers"), out.index("Products"))
+
+
 if __name__ == "__main__":
     unittest.main()

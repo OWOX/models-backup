@@ -397,21 +397,21 @@ def _fk_lookup(mart, path_lookup):
     return fk
 
 
-def _render_joins_section(mart, path_lookup):
+def _render_joins_section(mart, path_lookup, join_index=None):
     """Return a ## Joins markdown section from blendedFieldsConfig, or empty string.
 
-    Each direct join is emitted with its key condition in backticks when derivable,
-    e.g. `- [Sessions](./sessions-e-commerce.md) — \\`session_id = session_id\\``.
-    OWOX's blend config carries no explicit join columns, so the key is inferred the
-    same way the FK notes are: a join binds this mart's column to the target mart's
-    primary key of the same name. The canvas parser reads that `left = right` pair to
-    draw the join key on the ERD; a keyless link (no matching column) is left bare.
+    Join keys come from the mart's relationship graph (`joinConditions`), which is the
+    only place the real column pair is recorded — a join may bind columns with different
+    names (`sku = product_code`). When a source has no relationship (blend-only sources,
+    or an API that withheld the graph) we fall back to the older heuristic: a column named
+    exactly like the target's primary key. A link with neither stays bare, as before.
     """
     sources = (mart.get("blendedFieldsConfig") or {}).get("sources") or []
     direct = [s for s in sources
               if "." not in s.get("path", "") and not s.get("isExcluded")]
     if not direct:
         return ""
+    join_index = join_index or {}
     local_cols = {f.get("name") for f in (mart.get("schema") or {}).get("fields", [])
                   if isinstance(f, dict)}
     lines = ["## Joins", ""]
@@ -420,8 +420,10 @@ def _render_joins_section(mart, path_lookup):
         matched = path_lookup.get(src["path"])
         if matched:
             _, fname, target_pks = matched
-            keys = [pk for pk in target_pks if pk in local_cols]
-            cond = ", ".join(f"`{k} = {k}`" for k in keys)
+            pairs = join_index.get(src["path"])
+            if not pairs:
+                pairs = [(pk, pk) for pk in target_pks if pk in local_cols]
+            cond = ", ".join(f"`{left} = {right}`" for left, right in pairs)
             lines.append(f"- [{alias}](./{fname}) — {cond}" if cond
                          else f"- [{alias}](./{fname})")
         else:
