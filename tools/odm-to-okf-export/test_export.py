@@ -180,5 +180,33 @@ class FkLookupTests(unittest.TestCase):
         self.assertEqual(fk["region_code"], ("Warehouses", "warehouses.md"))
 
 
+class StorageFilterTests(unittest.TestCase):
+    def setUp(self):
+        self.storages = [
+            {"id": "st-1", "title": "BigQuery [Common]", "type": "GOOGLE_BIGQUERY"},
+            {"id": "st-2", "title": "BQ [Marketing]", "type": "GOOGLE_BIGQUERY"},
+        ]
+        self.marts = [
+            {"id": "m1", "storage": {"title": "BigQuery [Common]", "type": "GOOGLE_BIGQUERY"}},
+            {"id": "m2", "storage": {"title": "BQ [Marketing]", "type": "GOOGLE_BIGQUERY"}},
+        ]
+
+    def test_keeps_only_marts_of_that_storage(self):
+        kept, needs_detail = export.filter_marts_by_storage(self.marts, self.storages, "st-1")
+        self.assertEqual([m["id"] for m in kept], ["m1"])
+        self.assertFalse(needs_detail)
+
+    def test_unknown_storage_id_is_an_error(self):
+        with self.assertRaises(SystemExit):
+            export.filter_marts_by_storage(self.marts, self.storages, "st-nope")
+
+    def test_ambiguous_title_type_pair_requests_detail_fallback(self):
+        storages = self.storages + [{"id": "st-3", "title": "BigQuery [Common]",
+                                     "type": "GOOGLE_BIGQUERY"}]
+        kept, needs_detail = export.filter_marts_by_storage(self.marts, storages, "st-1")
+        self.assertTrue(needs_detail)
+        self.assertEqual([m["id"] for m in kept], ["m1"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -140,6 +140,33 @@ def get_data_mart(api_origin, headers, mart_id):
     return _http_json("GET", api_origin + DATA_MART_GET_PATH.format(id=mart_id), headers=headers)
 
 
+def list_data_storages(api_origin, headers):
+    """Return [{id, title, type}, ...] for the project's data storages."""
+    data = _http_json("GET", f"{api_origin}/api/data-storages", headers=headers)
+    return data.get("items", data) if isinstance(data, dict) else (data or [])
+
+
+def filter_marts_by_storage(marts, storages, storage_id):
+    """Keep only marts sitting on `storage_id`.
+
+    /api/data-marts returns storage as {type, title} with no id and offers no storage
+    filter, so we match on the (title, type) pair resolved from /api/data-storages. When
+    that pair is not unique the match is unsafe: the caller must re-check each kept mart
+    against the detailed /api/data-marts/{id}, which does carry storage.id.
+    """
+    target = next((s for s in storages if s.get("id") == storage_id), None)
+    if target is None:
+        known = ", ".join(f"{s.get('id')} ({s.get('title')})" for s in storages)
+        sys.exit(f"Storage {storage_id} not found in this project. Available: {known}")
+    key = (target.get("title"), target.get("type"))
+    ambiguous = sum(1 for s in storages
+                    if (s.get("title"), s.get("type")) == key) > 1
+    kept = [m for m in marts
+            if ((m.get("storage") or {}).get("title"),
+                (m.get("storage") or {}).get("type")) == key]
+    return kept, ambiguous
+
+
 RELATIONSHIPS_GRAPH_PATH = "/api/data-marts/{id}/relationships/graph"
 
 
@@ -932,6 +959,8 @@ def main():
     p.add_argument("--api-key", default=os.environ.get("OWOX_API_KEY"),
                    help="OWOX API key (owox_key_...). Defaults to $OWOX_API_KEY.")
     p.add_argument("--ids", default="", help="Comma-separated data-mart IDs (default: all).")
+    p.add_argument("--storage", default=os.environ.get("STORAGE_ID"),
+                   help="Export only data marts on this data-storage id ($STORAGE_ID).")
     p.add_argument("--out", default="bundels", help="Output directory (default: bundels).")
     p.add_argument("--sample-rows", type=int, default=0,
                    help="Embed first N rows as preview per mart (default: 0 = none).")
@@ -974,6 +1003,8 @@ def main():
 
     if args.ids.strip():
         ids = [i.strip() for i in args.ids.split(",") if i.strip()]
+        if args.storage:
+            print("  --storage is ignored when --ids is given.")
     else:
         print("Listing data marts...")
         all_marts = list_data_marts(api_origin, headers)
@@ -984,6 +1015,15 @@ def main():
                 print(f"  Skipped {skipped} data mart(s) not available for reporting "
                       f"(pass --no-shared-only to include them).")
             all_marts = filtered
+        if args.storage:
+            storages = list_data_storages(api_origin, headers)
+            all_marts, needs_detail = filter_marts_by_storage(all_marts, storages, args.storage)
+            if needs_detail:
+                print("  Storage title is ambiguous; verifying each mart individually...")
+                all_marts = [m for m in all_marts
+                             if (get_data_mart(api_origin, headers, m["id"]).get("storage") or {}
+                                 ).get("id") == args.storage]
+            print(f"  {len(all_marts)} data mart(s) on storage {args.storage}.")
         ids = [m["id"] for m in all_marts]
     print(f"  {len(ids)} data mart(s) to export.")
 
