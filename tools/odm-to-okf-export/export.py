@@ -140,6 +140,51 @@ def get_data_mart(api_origin, headers, mart_id):
     return _http_json("GET", api_origin + DATA_MART_GET_PATH.format(id=mart_id), headers=headers)
 
 
+RELATIONSHIPS_GRAPH_PATH = "/api/data-marts/{id}/relationships/graph"
+
+
+def get_relationships_graph(api_origin, headers, mart_id):
+    """Fetch a mart's relationship graph. Returns an empty graph if the API refuses,
+    so that export still works for keys or projects without relationship access."""
+    try:
+        return _http_json("GET", api_origin + RELATIONSHIPS_GRAPH_PATH.format(id=mart_id),
+                          headers=headers)
+    except urllib.error.HTTPError as exc:
+        print(f"  ! relationships unavailable for {mart_id} (HTTP {exc.code}); "
+              f"falling back to name matching.")
+        return {"nodes": []}
+
+
+def build_join_index(graph, mart_id):
+    """Map a mart's direct joins to their real key pairs.
+
+    Returns {path_key: [(source_field, target_field), ...]} where path_key matches
+    blendedFieldsConfig's `path` for the same join. Only edges leaving `mart_id` are
+    kept; cycle stubs and deeper hops are skipped, and each relationship id is used once.
+    """
+    index, seen = {}, set()
+    for node in (graph or {}).get("nodes") or []:
+        if not isinstance(node, dict) or node.get("isCycleStub"):
+            continue
+        rel = node.get("relationship") or {}
+        rel_id = rel.get("id")
+        if not rel_id or rel_id in seen:
+            continue
+        if (rel.get("sourceDataMart") or {}).get("id") != mart_id:
+            continue
+        path = node.get("aliasPath") or rel.get("targetAlias") or ""
+        if not path or "." in path:
+            continue
+        pairs = [(c["sourceFieldName"], c["targetFieldName"])
+                 for c in rel.get("joinConditions") or []
+                 if isinstance(c, dict) and c.get("sourceFieldName") and c.get("targetFieldName")]
+        if not pairs:
+            continue
+        seen.add(rel_id)
+        index[path] = pairs
+    return index
+
+
 def fetch_sample_rows(api_origin, headers, mart_id, n):
     """Stream the .ndjson endpoint and stop after n rows (does not download all)."""
     if n <= 0:

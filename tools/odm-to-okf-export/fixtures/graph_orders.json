@@ -1,0 +1,44 @@
+{
+  "rootDataMartId": "mart-orders",
+  "nodes": [
+    {
+      "aliasPath": "customers",
+      "depth": 1,
+      "isCycleStub": false,
+      "isBlocked": false,
+      "relationship": {
+        "id": "rel-1",
+        "sourceDataMart": {"id": "mart-orders", "title": "Orders"},
+        "targetDataMart": {"id": "mart-customers", "title": "Customers"},
+        "targetAlias": "customers",
+        "joinConditions": [{"sourceFieldName": "customer_id", "targetFieldName": "customer_id"}]
+      }
+    },
+    {
+      "aliasPath": "products",
+      "depth": 1,
+      "isCycleStub": false,
+      "isBlocked": false,
+      "relationship": {
+        "id": "rel-2",
+        "sourceDataMart": {"id": "mart-orders", "title": "Orders"},
+        "targetDataMart": {"id": "mart-products", "title": "Products"},
+        "targetAlias": "products",
+        "joinConditions": [{"sourceFieldName": "sku", "targetFieldName": "product_code"}]
+      }
+    },
+    {
+      "aliasPath": "customers.orders",
+      "depth": 2,
+      "isCycleStub": true,
+      "isBlocked": false,
+      "relationship": {
+        "id": "rel-1",
+        "sourceDataMart": {"id": "mart-customers", "title": "Customers"},
+        "targetDataMart": {"id": "mart-orders", "title": "Orders"},
+        "targetAlias": "orders",
+        "joinConditions": [{"sourceFieldName": "customer_id", "targetFieldName": "customer_id"}]
+      }
+    }
+  ]
+}
