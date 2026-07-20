@@ -2,6 +2,8 @@
 import importlib.util
 import json
 import os
+import shutil
+import tempfile
 import unittest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -206,6 +208,41 @@ class StorageFilterTests(unittest.TestCase):
         kept, needs_detail = export.filter_marts_by_storage(self.marts, storages, "st-1")
         self.assertTrue(needs_detail)
         self.assertEqual([m["id"] for m in kept], ["m1"])
+
+
+class CollectBundlesTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp)
+        self._write("e-commerce", "E-Commerce", ["a.md", "b.md"])
+        self._write("saas", "SaaS", ["x.md"])
+
+    def _write(self, folder, title, marts):
+        d = os.path.join(self.tmp, folder)
+        os.makedirs(d)
+        rows = "\n".join(f"| [{m[:-3]}](./{m}) | VIEW | GOOGLE_BIGQUERY |" for m in marts)
+        with open(os.path.join(d, "index.md"), "w", encoding="utf-8") as fh:
+            fh.write(f'---\ntype: "index"\ntitle: "{title}"\n---\n\n# {title}\n\n'
+                     f"| Data Mart | Type | Storage |\n|---|---|---|\n{rows}\n")
+        for m in marts:
+            with open(os.path.join(d, m), "w", encoding="utf-8") as fh:
+                fh.write(f'---\ntype: "OWOX Data Mart"\ntitle: "{m[:-3]}"\n---\n\n# {m[:-3]}\n')
+
+    def test_lists_every_bundle_sorted(self):
+        found = export.collect_bundles(self.tmp)
+        self.assertEqual([f for f, _, _ in found], ["e-commerce", "saas"])
+
+    def test_reads_title_and_counts_concepts(self):
+        found = dict((f, (t, n)) for f, t, n in export.collect_bundles(self.tmp))
+        self.assertEqual(found["e-commerce"], ("E-Commerce", 2))
+        self.assertEqual(found["saas"], ("SaaS", 1))
+
+    def test_ignores_files_and_folders_without_index(self):
+        os.makedirs(os.path.join(self.tmp, "not-a-bundle"))
+        with open(os.path.join(self.tmp, "viz.html"), "w") as fh:
+            fh.write("x")
+        self.assertEqual([f for f, _, _ in export.collect_bundles(self.tmp)],
+                         ["e-commerce", "saas"])
 
 
 if __name__ == "__main__":

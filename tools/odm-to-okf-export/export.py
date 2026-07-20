@@ -470,6 +470,38 @@ def _render_joins_section(mart, path_lookup, join_index=None):
     return "\n".join(lines)
 
 
+def read_frontmatter(path):
+    """Parse the leading --- block of an OKF markdown file into a flat dict of strings."""
+    fields = {}
+    with open(path, encoding="utf-8") as fh:
+        if fh.readline().strip() != "---":
+            return fields
+        for line in fh:
+            line = line.rstrip("\n")
+            if line.strip() == "---":
+                break
+            key, sep, value = line.partition(":")
+            if not sep:
+                continue
+            fields[key.strip()] = value.strip().strip('"')
+    return fields
+
+
+def collect_bundles(out_dir):
+    """Return [(folder, title, concept_count), ...] for every bundle folder in out_dir."""
+    found = []
+    for folder in sorted(os.listdir(out_dir)):
+        bundle_dir = os.path.join(out_dir, folder)
+        index_path = os.path.join(bundle_dir, "index.md")
+        if not os.path.isdir(bundle_dir) or not os.path.isfile(index_path):
+            continue
+        title = read_frontmatter(index_path).get("title") or folder
+        count = len([f for f in os.listdir(bundle_dir)
+                     if f.endswith(".md") and f != "index.md"])
+        found.append((folder, title, count))
+    return found
+
+
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
                  join_indexes=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
@@ -511,14 +543,17 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     with open(os.path.join(marts_dir, "index.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(di) + "\n")
 
-    # bundle root index.md
+    # bundle root index.md — a catalog of every bundle in this directory
+    bundles = collect_bundles(out_dir)
     root = [render_frontmatter({
-        "type": "index", "title": project_title,
-        "description": f"OKF bundle generated from OWOX Data Marts.",
+        "type": "index", "title": "OKF Bundles",
+        "description": "OKF bundles generated from OWOX Data Marts.",
         "tags": ["owox", "index"], "timestamp": ts,
-    }), "", f"# {project_title}", "",
-        f"Generated {ts}.", "",
-        f"- [{project_title}](./{project_folder}/index.md) — {len(index_rows)} concept(s)", ""]
+    }), "", "# OKF Bundles", "",
+        f"Generated {ts}.", ""]
+    for folder, title, count in bundles:
+        root.append(f"- [{title}](./{folder}/index.md) — {count} concept(s)")
+    root.append("")
     with open(os.path.join(out_dir, "index.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(root) + "\n")
 
@@ -1049,8 +1084,10 @@ def main():
         for mart, sample in marts_with_docs
     ]
 
-    if os.path.isdir(args.out):
-        shutil.rmtree(args.out)
+    # Only this bundle's folder is rewritten — sibling bundles in the gallery stay put.
+    bundle_dir = os.path.join(args.out, project_folder)
+    if os.path.isdir(bundle_dir):
+        shutil.rmtree(bundle_dir)
     count = write_bundle(args.out, marts_with_docs, project_folder, display_title,
                          join_indexes=join_indexes)
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
