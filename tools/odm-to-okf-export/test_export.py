@@ -159,6 +159,26 @@ class FkLookupTests(unittest.TestCase):
         fk = export._fk_lookup(self.mart, self.path_lookup, {})
         self.assertEqual(fk["customer_id"], ("Customers", "customers.md"))
 
+    def test_composite_key_annotates_every_source_column(self):
+        # Composite keys are real (a live OWOX mart has a two-field primary key), so a
+        # join_index entry with more than one pair must annotate every source column.
+        mart = {
+            "id": "mart-warehouses",
+            "blendedFieldsConfig": {"sources": [
+                {"path": "warehouses", "alias": "Warehouses", "fields": {}},
+            ]},
+        }
+        path_lookup = {
+            "warehouses": ("Warehouses", "warehouses.md", ["warehouse_id", "region_code"]),
+        }
+        join_index = {
+            "warehouses": [("warehouse_id", "warehouse_id"), ("region_code", "region_code")],
+        }
+        fk = export._fk_lookup(mart, path_lookup, join_index)
+        # Both source columns should be annotated with the target's (title, filename)
+        self.assertEqual(fk["warehouse_id"], ("Warehouses", "warehouses.md"))
+        self.assertEqual(fk["region_code"], ("Warehouses", "warehouses.md"))
+
 
 if __name__ == "__main__":
     unittest.main()
