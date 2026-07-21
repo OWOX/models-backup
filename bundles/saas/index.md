@@ -3,7 +3,7 @@ type: "index"
 title: "SaaS"
 description: "Index of exported OWOX data marts."
 tags: ["owox", "index"]
-timestamp: 2026-07-20T16:52:48Z
+timestamp: 2026-07-21T13:41:32Z
 ---
 
 # SaaS
@@ -13,6 +13,8 @@ timestamp: 2026-07-20T16:52:48Z
 | [Account](./account.md) | VIEW | GOOGLE_BIGQUERY |
 | [Invoices](./invoices.md) | VIEW | GOOGLE_BIGQUERY |
 | [Marketing Spend](./marketing-spend.md) | VIEW | GOOGLE_BIGQUERY |
+| [Plan](./plan.md) | VIEW | GOOGLE_BIGQUERY |
+| [Subscription](./subscription.md) | VIEW | GOOGLE_BIGQUERY |
 | [Subscription Events](./subscription-events.md) | VIEW | GOOGLE_BIGQUERY |
 | [Support Tickets](./support-tickets.md) | VIEW | GOOGLE_BIGQUERY |
 | [Trials](./trials.md) | VIEW | GOOGLE_BIGQUERY |

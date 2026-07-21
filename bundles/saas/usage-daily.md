@@ -4,7 +4,7 @@ title: "Usage (daily)"
 description: "One row per account × user × day of product usage. Engagement and activation."
 resource: "https://app.owox.com/api/external/http-data/data-marts/3f271fcb-c1f6-4cb2-8914-86b73fb55675.ndjson"
 tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-20T16:43:09.000Z
+timestamp: 2026-07-21T13:33:24.000Z
 ---
 
 # Usage (daily)
@@ -29,7 +29,7 @@ One row per account × user × day of product usage. Engagement and activation.
 | `usage_date` | DATE | Calendar day of the usage. |
 | `active_minutes` | INTEGER | Minutes the user was active in-product. |
 | `key_actions` | INTEGER | Count of high-value actions taken. |
-| `feature_adoption_score` | FLOAT | Breadth of features touched — activation signal. |
+| `distinct_features_used` | INTEGER | Count of distinct product features touched that day — activation breadth. |
 
 ## Joins
 
