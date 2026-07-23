@@ -1,22 +1,21 @@
 ---
 type: "index"
 title: "SaaS"
-description: "A B2B subscription software business modeled end to end — from the marketing that brings accounts in, through trials, subscriptions and seat expansion, to the product usage, support experience and billing that decide whether they stay."
+description: |
+  A B2B subscription software business modeled end to end — from the marketing that brings
+  accounts in, through trials, subscriptions and seat expansion, to the product usage,
+  support experience and billing that decide whether they stay. Recurring revenue is the
+  spine: every plan change flows through an MRR movement (new, expansion, contraction,
+  churn), while engagement, support and payment health all feed the retention story.
 tags: ["owox", "index"]
-timestamp: 2026-07-23T14:27:26Z
+timestamp: 2026-07-23T16:41:26Z
 ---
 
 <!-- OWOX:GENERATED:START — regenerated on export, do not edit inside this block -->
 
 # SaaS
 
-A B2B subscription software business modeled end to end — from the marketing that brings
-accounts in, through trials, subscriptions and seat expansion, to the product usage,
-support experience and billing that decide whether they stay. Recurring revenue is the
-spine: every plan change flows through an MRR movement (new, expansion, contraction,
-churn), while engagement, support and payment health all feed the retention story.
-
-# Examples
+# Example Questions
 
 - What is net revenue retention, and how much of it is expansion versus what contraction and churn take back?
 - Which acquisition channels pay back their cost fastest once you account for the revenue those accounts actually retain?

@@ -1,18 +1,17 @@
 ---
 type: "OWOX Data Mart"
 title: "Trials"
-description: "Every trial and how it ended — converted to paid or not — with when it started and expired, where it came from (self-serve, sales-assisted, product-led upsell), and the plan it was evaluating."
+description: |
+  Every trial and how it ended — converted to paid or not — with when it started and expired,
+  where it came from (self-serve, sales-assisted, product-led upsell), and the plan it was
+  evaluating. The top of the funnel for new recurring revenue.
 tags: ["owox"]
 timestamp: 2026-07-23T12:51:27.000Z
 ---
 
 # Trials
 
-Every trial and how it ended — converted to paid or not — with when it started and expired,
-where it came from (self-serve, sales-assisted, product-led upsell), and the plan it was
-evaluating. The top of the funnel for new recurring revenue.
-
-# Examples
+# Example Questions
 
 - What is the trial-to-paid conversion rate, and how does it differ by trial source?
 - How long do trials take to convert, and does evaluating a higher tier change the odds?
