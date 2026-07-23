@@ -1,23 +1,29 @@
 ---
 type: "OWOX Data Mart"
 title: "Usage (daily)"
-description: "One row per account × user × day of product usage. Engagement and activation."
-resource: "https://app.owox.com/api/external/http-data/data-marts/3f271fcb-c1f6-4cb2-8914-86b73fb55675.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-21T13:33:24.000Z
+description: |
+  Daily product engagement at the account-and-user level: active minutes, high-value actions
+  taken, and how many distinct features were touched — the breadth signal for activation. The
+  behavioral pulse that explains why accounts expand, stall, or churn.
+
+  **Example questions this mart can answer:**
+  - How does product engagement in the first weeks predict whether an account converts and expands?
+  - Which accounts are quietly disengaging — falling active minutes or narrowing feature use — before they churn?
+  - Does broader feature adoption go hand in hand with higher retention and revenue?
+tags: ["owox"]
+timestamp: 2026-07-23T12:51:28.000Z
 ---
 
 # Usage (daily)
 
-One row per account × user × day of product usage. Engagement and activation.
+Daily product engagement at the account-and-user level: active minutes, high-value actions
+taken, and how many distinct features were touched — the breadth signal for activation. The
+behavioral pulse that explains why accounts expand, stall, or churn.
 
-## Overview
-
-- **ID:** `3f271fcb-c1f6-4cb2-8914-86b73fb55675`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [SaaS] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/3f271fcb-c1f6-4cb2-8914-86b73fb55675.ndjson`
+**Example questions this mart can answer:**
+- How does product engagement in the first weeks predict whether an account converts and expands?
+- Which accounts are quietly disengaging — falling active minutes or narrowing feature use — before they churn?
+- Does broader feature adoption go hand in hand with higher retention and revenue?
 
 # Schema
 

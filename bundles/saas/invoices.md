@@ -1,23 +1,29 @@
 ---
 type: "OWOX Data Mart"
 title: "Invoices"
-description: "One row per invoice. Billing, collections and dunning."
-resource: "https://app.owox.com/api/external/http-data/data-marts/393ca959-5c23-433f-8b07-b5490c5c2fb9.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-21T13:31:06.000Z
+description: |
+  Every invoice and how it was paid — amount, tax, discounts and credits, payment status, and
+  where it sits in the dunning cycle when a payment fails. This is where voluntary revenue meets
+  involuntary churn: failed payments and collections stages that quietly erode the customer base.
+
+  **Example questions this mart can answer:**
+  - How much revenue is lost to failed payments, and how much does dunning recover before write-off?
+  - Which accounts are slipping through the collections stages toward involuntary churn?
+  - How much do discounts and applied credits reduce collected revenue versus billed revenue?
+tags: ["owox"]
+timestamp: 2026-07-23T12:51:26.000Z
 ---
 
 # Invoices
 
-One row per invoice. Billing, collections and dunning.
+Every invoice and how it was paid — amount, tax, discounts and credits, payment status, and
+where it sits in the dunning cycle when a payment fails. This is where voluntary revenue meets
+involuntary churn: failed payments and collections stages that quietly erode the customer base.
 
-## Overview
-
-- **ID:** `393ca959-5c23-433f-8b07-b5490c5c2fb9`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [SaaS] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/393ca959-5c23-433f-8b07-b5490c5c2fb9.ndjson`
+**Example questions this mart can answer:**
+- How much revenue is lost to failed payments, and how much does dunning recover before write-off?
+- Which accounts are slipping through the collections stages toward involuntary churn?
+- How much do discounts and applied credits reduce collected revenue versus billed revenue?
 
 # Schema
 

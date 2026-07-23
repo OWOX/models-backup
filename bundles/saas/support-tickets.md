@@ -1,23 +1,29 @@
 ---
 type: "OWOX Data Mart"
 title: "Support Tickets"
-description: "One row per support ticket — CSAT and churn-risk signal."
-resource: "https://app.owox.com/api/external/http-data/data-marts/2d17b79d-e958-4853-aa45-195d29804041.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-21T13:32:54.000Z
+description: |
+  Every support interaction — priority, topic, satisfaction score, time to first response, and
+  resolution time. Support experience is an early churn-risk signal: unhappy, slow-to-resolve
+  accounts are the ones that quietly leave.
+
+  **Example questions this mart can answer:**
+  - How do satisfaction scores and response times relate to whether an account later churns?
+  - Which ticket categories drive the most dissatisfaction and the heaviest support load?
+  - Do accounts that raise many high-priority tickets expand less than smoother ones?
+tags: ["owox"]
+timestamp: 2026-07-23T12:51:28.000Z
 ---
 
 # Support Tickets
 
-One row per support ticket — CSAT and churn-risk signal.
+Every support interaction — priority, topic, satisfaction score, time to first response, and
+resolution time. Support experience is an early churn-risk signal: unhappy, slow-to-resolve
+accounts are the ones that quietly leave.
 
-## Overview
-
-- **ID:** `2d17b79d-e958-4853-aa45-195d29804041`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [SaaS] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/2d17b79d-e958-4853-aa45-195d29804041.ndjson`
+**Example questions this mart can answer:**
+- How do satisfaction scores and response times relate to whether an account later churns?
+- Which ticket categories drive the most dissatisfaction and the heaviest support load?
+- Do accounts that raise many high-priority tickets expand less than smoother ones?
 
 # Schema
 

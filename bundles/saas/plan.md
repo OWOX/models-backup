@@ -1,23 +1,29 @@
 ---
 type: "OWOX Data Mart"
 title: "Plan"
-description: "One row per sellable plan/price point. Fixed catalog of 4 tiers × 2 billing intervals."
-resource: "https://app.owox.com/api/external/http-data/data-marts/f7dfcbdd-b9a5-4dd1-ba7d-c2ae5c1837c2.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-21T13:36:33.000Z
+description: |
+  The price book: every sellable plan and price point — four tiers (Starter, Pro, Business,
+  Enterprise), each offered monthly or annually, with its list price and whether it is
+  currently sellable. The reference that gives every subscription its list pricing.
+
+  **Example questions this mart can answer:**
+  - How does list pricing step up across tiers, and what is the effective saving for paying annually?
+  - Which tiers and billing intervals are actually being sold the most?
+  - How much revenue sits on plans that are no longer offered to new customers?
+tags: ["owox"]
+timestamp: 2026-07-23T12:51:26.000Z
 ---
 
 # Plan
 
-One row per sellable plan/price point. Fixed catalog of 4 tiers × 2 billing intervals.
+The price book: every sellable plan and price point — four tiers (Starter, Pro, Business,
+Enterprise), each offered monthly or annually, with its list price and whether it is
+currently sellable. The reference that gives every subscription its list pricing.
 
-## Overview
-
-- **ID:** `f7dfcbdd-b9a5-4dd1-ba7d-c2ae5c1837c2`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [SaaS] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/f7dfcbdd-b9a5-4dd1-ba7d-c2ae5c1837c2.ndjson`
+**Example questions this mart can answer:**
+- How does list pricing step up across tiers, and what is the effective saving for paying annually?
+- Which tiers and billing intervals are actually being sold the most?
+- How much revenue sits on plans that are no longer offered to new customers?
 
 # Schema
 
