@@ -1,15 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Support Tickets"
-description: |
-  Every support interaction — priority, topic, satisfaction score, time to first response, and
-  resolution time. Support experience is an early churn-risk signal: unhappy, slow-to-resolve
-  accounts are the ones that quietly leave.
-
-  **Example questions this mart can answer:**
-  - How do satisfaction scores and response times relate to whether an account later churns?
-  - Which ticket categories drive the most dissatisfaction and the heaviest support load?
-  - Do accounts that raise many high-priority tickets expand less than smoother ones?
+description: "Every support interaction — priority, topic, satisfaction score, time to first response, and resolution time."
 tags: ["owox"]
 timestamp: 2026-07-23T12:51:28.000Z
 ---
@@ -20,7 +12,8 @@ Every support interaction — priority, topic, satisfaction score, time to first
 resolution time. Support experience is an early churn-risk signal: unhappy, slow-to-resolve
 accounts are the ones that quietly leave.
 
-**Example questions this mart can answer:**
+# Examples
+
 - How do satisfaction scores and response times relate to whether an account later churns?
 - Which ticket categories drive the most dissatisfaction and the heaviest support load?
 - Do accounts that raise many high-priority tickets expand less than smoother ones?

@@ -1,15 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "User"
-description: |
-  The people inside each account: one row per user seat, with role, seat type, when they were
-  invited, and how recently they were active. Seat-level activity is what turns a licensed
-  account into an adopted one — and idle seats are early signs of shrinking value.
-
-  **Example questions this mart can answer:**
-  - What share of licensed seats is actually active, and how does seat adoption vary by account?
-  - Which roles and seat types are the most engaged?
-  - Are accounts with many dormant seats the ones heading toward contraction?
+description: "The people inside each account: one row per user seat, with role, seat type, when they were invited, and how recently they were active."
 tags: ["owox"]
 timestamp: 2026-07-23T12:51:27.000Z
 ---
@@ -20,7 +12,8 @@ The people inside each account: one row per user seat, with role, seat type, whe
 invited, and how recently they were active. Seat-level activity is what turns a licensed
 account into an adopted one — and idle seats are early signs of shrinking value.
 
-**Example questions this mart can answer:**
+# Examples
+
 - What share of licensed seats is actually active, and how does seat adoption vary by account?
 - Which roles and seat types are the most engaged?
 - Are accounts with many dormant seats the ones heading toward contraction?

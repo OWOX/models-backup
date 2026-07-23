@@ -1,16 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Balances (monthly)"
-description: |
-  A month-by-month snapshot of every account's balance and the money it earns or costs the
-  business — interest earned on lending, interest paid on deposits, and fee income. This is
-  the view for understanding the earning power of the book over time and how balances build
-  up or run down.
-
-  **Example questions this mart can answer:**
-  - What is the net interest margin across the book, and how does it trend month over month?
-  - Which products and balance tiers contribute most to interest and fee income?
-  - How stable are deposit balances over time, and where is money quietly draining away?
+description: "A month-by-month snapshot of every account's balance and the money it earns or costs the business — interest earned on lending, interest paid on deposits, and fee income."
 tags: ["owox"]
 timestamp: 2026-07-23T12:02:48.000Z
 ---
@@ -22,7 +13,8 @@ business — interest earned on lending, interest paid on deposits, and fee inco
 the view for understanding the earning power of the book over time and how balances build
 up or run down.
 
-**Example questions this mart can answer:**
+# Examples
+
 - What is the net interest margin across the book, and how does it trend month over month?
 - Which products and balance tiers contribute most to interest and fee income?
 - How stable are deposit balances over time, and where is money quietly draining away?

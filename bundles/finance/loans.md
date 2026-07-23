@@ -1,16 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Loans"
-description: |
-  Every loan application and what happened to it — approved, declined, or withdrawn —
-  through to how much was actually funded and at what rate. Captures the full underwriting
-  funnel, the reasons applications are turned down, and the pricing applied to each borrower
-  based on their risk. This is the origination story of the loan book.
-
-  **Example questions this mart can answer:**
-  - How do approval rates and interest rates vary across borrower risk tiers?
-  - Of the loans approved, what share actually gets funded, and where does the funnel leak?
-  - What are the most common reasons applications are declined, and how does that differ by risk tier?
+description: "Every loan application and what happened to it — approved, declined, or withdrawn — through to how much was actually funded and at what rate."
 tags: ["owox"]
 timestamp: 2026-07-23T12:02:48.000Z
 ---
@@ -22,7 +13,8 @@ through to how much was actually funded and at what rate. Captures the full unde
 funnel, the reasons applications are turned down, and the pricing applied to each borrower
 based on their risk. This is the origination story of the loan book.
 
-**Example questions this mart can answer:**
+# Examples
+
 - How do approval rates and interest rates vary across borrower risk tiers?
 - Of the loans approved, what share actually gets funded, and where does the funnel leak?
 - What are the most common reasons applications are declined, and how does that differ by risk tier?

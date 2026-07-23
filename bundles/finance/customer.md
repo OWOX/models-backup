@@ -1,17 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Customer"
-description: |
-  Everyone the business has taken on as a borrower, with the details that drive every
-  downstream decision: how they were acquired, whether they passed identity and eligibility
-  checks, their credit standing at sign-up, an internal risk tier, and whether they went on
-  to fund an account. The starting point for understanding who your customers are and where
-  they come from.
-
-  **Example questions this mart can answer:**
-  - Which marketing channels bring in the highest share of low-risk, creditworthy customers?
-  - How many people pass the initial checks but never open a funded account — and where are they lost?
-  - Does a customer's credit standing at sign-up line up with whether they become an active, funded borrower?
+description: "Everyone the business has taken on as a borrower, with the details that drive every downstream decision: how they were acquired, whether they passed identity and eligibility checks, their credit standing at sign-up, an internal risk tier, and whether they went on to fund an account."
 tags: ["owox"]
 timestamp: 2026-07-23T12:02:47.000Z
 ---
@@ -24,7 +14,8 @@ checks, their credit standing at sign-up, an internal risk tier, and whether the
 to fund an account. The starting point for understanding who your customers are and where
 they come from.
 
-**Example questions this mart can answer:**
+# Examples
+
 - Which marketing channels bring in the highest share of low-risk, creditworthy customers?
 - How many people pass the initial checks but never open a funded account — and where are they lost?
 - Does a customer's credit standing at sign-up line up with whether they become an active, funded borrower?

@@ -1,15 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Usage (daily)"
-description: |
-  Daily product engagement at the account-and-user level: active minutes, high-value actions
-  taken, and how many distinct features were touched — the breadth signal for activation. The
-  behavioral pulse that explains why accounts expand, stall, or churn.
-
-  **Example questions this mart can answer:**
-  - How does product engagement in the first weeks predict whether an account converts and expands?
-  - Which accounts are quietly disengaging — falling active minutes or narrowing feature use — before they churn?
-  - Does broader feature adoption go hand in hand with higher retention and revenue?
+description: "Daily product engagement at the account-and-user level: active minutes, high-value actions taken, and how many distinct features were touched — the breadth signal for activation."
 tags: ["owox"]
 timestamp: 2026-07-23T12:51:28.000Z
 ---
@@ -20,7 +12,8 @@ Daily product engagement at the account-and-user level: active minutes, high-val
 taken, and how many distinct features were touched — the breadth signal for activation. The
 behavioral pulse that explains why accounts expand, stall, or churn.
 
-**Example questions this mart can answer:**
+# Examples
+
 - How does product engagement in the first weeks predict whether an account converts and expands?
 - Which accounts are quietly disengaging — falling active minutes or narrowing feature use — before they churn?
 - Does broader feature adoption go hand in hand with higher retention and revenue?

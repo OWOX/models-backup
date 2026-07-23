@@ -1,16 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Collections"
-description: |
-  Every action taken to recover money from loans that have fallen behind — reminders, calls,
-  restructures, and hand-offs to agencies — and what came of each. Tracks how much is
-  recovered and how effective different approaches are once a loan is delinquent or written
-  off. This is the last line of defense on losses.
-
-  **Example questions this mart can answer:**
-  - Which collections actions recover the most money relative to how often they are used?
-  - After a loan is written off, how much is typically recovered, and how quickly does recovery taper off?
-  - Do earlier interventions (reminders and calls) reduce how many loans end up handed to an agency?
+description: "Every action taken to recover money from loans that have fallen behind — reminders, calls, restructures, and hand-offs to agencies — and what came of each."
 tags: ["owox"]
 timestamp: 2026-07-23T13:16:47.000Z
 ---
@@ -22,7 +13,8 @@ restructures, and hand-offs to agencies — and what came of each. Tracks how mu
 recovered and how effective different approaches are once a loan is delinquent or written
 off. This is the last line of defense on losses.
 
-**Example questions this mart can answer:**
+# Examples
+
 - Which collections actions recover the most money relative to how often they are used?
 - After a loan is written off, how much is typically recovered, and how quickly does recovery taper off?
 - Do earlier interventions (reminders and calls) reduce how many loans end up handed to an agency?

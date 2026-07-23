@@ -1,16 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Subscription"
-description: |
-  The billing spine: one row per subscription showing which account is on which plan, at what
-  monthly recurring revenue and seat count, on what cadence, and with any negotiated discount.
-  It also reveals where a subscription's plan has drifted from the account's current tier under
-  grandfathered or discounted pricing. The source of truth for what each customer pays today.
-
-  **Example questions this mart can answer:**
-  - What is total recurring revenue, and how is it spread across tiers, billing intervals and seat counts?
-  - How common are negotiated discounts, and how much list price do they give away?
-  - Which accounts sit on grandfathered pricing that no longer matches their current tier?
+description: "The billing spine: one row per subscription showing which account is on which plan, at what monthly recurring revenue and seat count, on what cadence, and with any negotiated discount."
 tags: ["owox"]
 timestamp: 2026-07-23T12:51:26.000Z
 ---
@@ -22,7 +13,8 @@ monthly recurring revenue and seat count, on what cadence, and with any negotiat
 It also reveals where a subscription's plan has drifted from the account's current tier under
 grandfathered or discounted pricing. The source of truth for what each customer pays today.
 
-**Example questions this mart can answer:**
+# Examples
+
 - What is total recurring revenue, and how is it spread across tiers, billing intervals and seat counts?
 - How common are negotiated discounts, and how much list price do they give away?
 - Which accounts sit on grandfathered pricing that no longer matches their current tier?

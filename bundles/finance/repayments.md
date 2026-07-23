@@ -1,16 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Repayments"
-description: |
-  The repayment schedule for every funded loan and how each installment actually played
-  out — paid on time, paid late, or missed. Tracks how far behind each loan falls, the
-  principal still outstanding, and the point at which a loan is written off. This is where
-  the health of the loan book, and the losses building in it, become visible.
-
-  **Example questions this mart can answer:**
-  - How does the rate of loans falling 90+ days behind differ across risk tiers?
-  - What share of lent principal ends up written off, and how does that build over the life of a loan?
-  - How many delinquent loans recover and return to good standing versus rolling into write-off?
+description: "The repayment schedule for every funded loan and how each installment actually played out — paid on time, paid late, or missed."
 tags: ["owox"]
 timestamp: 2026-07-23T12:02:49.000Z
 ---
@@ -22,7 +13,8 @@ out — paid on time, paid late, or missed. Tracks how far behind each loan fall
 principal still outstanding, and the point at which a loan is written off. This is where
 the health of the loan book, and the losses building in it, become visible.
 
-**Example questions this mart can answer:**
+# Examples
+
 - How does the rate of loans falling 90+ days behind differ across risk tiers?
 - What share of lent principal ends up written off, and how does that build over the life of a loan?
 - How many delinquent loans recover and return to good standing versus rolling into write-off?

@@ -1,15 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Marketing Spend"
-description: |
-  Marketing investment by channel, campaign and day — cost, leads, and signups — attributed to
-  the cohort of accounts each channel brings in rather than to individual accounts. The numerator
-  and denominator of customer acquisition cost, and the starting point for payback analysis.
-
-  **Example questions this mart can answer:**
-  - What is blended and per-channel acquisition cost, and which channels turn leads into signups most efficiently?
-  - Which channels pay back fastest once their spend is set against the revenue their cohort retains?
-  - How has cost per signup shifted over time as spend scaled up or down?
+description: "Marketing investment by channel, campaign and day — cost, leads, and signups — attributed to the cohort of accounts each channel brings in rather than to individual accounts."
 tags: ["owox"]
 timestamp: 2026-07-23T12:51:25.000Z
 ---
@@ -20,7 +12,8 @@ Marketing investment by channel, campaign and day — cost, leads, and signups �
 the cohort of accounts each channel brings in rather than to individual accounts. The numerator
 and denominator of customer acquisition cost, and the starting point for payback analysis.
 
-**Example questions this mart can answer:**
+# Examples
+
 - What is blended and per-channel acquisition cost, and which channels turn leads into signups most efficiently?
 - Which channels pay back fastest once their spend is set against the revenue their cohort retains?
 - How has cost per signup shifted over time as spend scaled up or down?
