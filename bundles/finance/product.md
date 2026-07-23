@@ -1,16 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Product"
-description: |
-  The catalog of products the business offers — deposits, cards, loans, and
-  buy-now-pay-later — each with its headline rate and standard term. For deposits the rate
-  is what the business pays the customer; for credit products it is what the customer is
-  charged. This is the lookup that gives every account and loan its pricing context.
-
-  **Example questions this mart can answer:**
-  - How does the rate charged on lending products compare with the rate paid out on deposits?
-  - Which product types carry the longest terms, and how does that shape the revenue they generate?
-  - How is the customer base split between savings products and credit products?
+description: "The catalog of products the business offers — deposits, cards, loans, and buy-now-pay-later — each with its headline rate and standard term."
 tags: ["owox"]
 timestamp: 2026-07-23T12:02:47.000Z
 ---
@@ -22,7 +13,8 @@ buy-now-pay-later — each with its headline rate and standard term. For deposit
 is what the business pays the customer; for credit products it is what the customer is
 charged. This is the lookup that gives every account and loan its pricing context.
 
-**Example questions this mart can answer:**
+# Examples
+
 - How does the rate charged on lending products compare with the rate paid out on deposits?
 - Which product types carry the longest terms, and how does that shape the revenue they generate?
 - How is the customer base split between savings products and credit products?

@@ -1,17 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Transactions"
-description: |
-  Every payment, withdrawal, transfer, and card authorization flowing through customer
-  accounts — the day-to-day activity that shows how engaged customers are and where fraud
-  shows up. Each record carries the amount, merchant category, channel, whether it was
-  declined, and the fraud assessment made at the time of authorization. The pulse of
-  everyday customer behavior.
-
-  **Example questions this mart can answer:**
-  - Where does the fraud-detection system catch real fraud versus wrongly declining good customers?
-  - Which spending categories and channels drive the most transaction volume and value?
-  - How does everyday account activity differ between engaged customers and those going dormant?
+description: "Every payment, withdrawal, transfer, and card authorization flowing through customer accounts — the day-to-day activity that shows how engaged customers are and where fraud shows up."
 tags: ["owox"]
 timestamp: 2026-07-23T12:02:49.000Z
 ---
@@ -24,7 +14,8 @@ shows up. Each record carries the amount, merchant category, channel, whether it
 declined, and the fraud assessment made at the time of authorization. The pulse of
 everyday customer behavior.
 
-**Example questions this mart can answer:**
+# Examples
+
 - Where does the fraud-detection system catch real fraud versus wrongly declining good customers?
 - Which spending categories and channels drive the most transaction volume and value?
 - How does everyday account activity differ between engaged customers and those going dormant?

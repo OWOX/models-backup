@@ -1,15 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Plan"
-description: |
-  The price book: every sellable plan and price point — four tiers (Starter, Pro, Business,
-  Enterprise), each offered monthly or annually, with its list price and whether it is
-  currently sellable. The reference that gives every subscription its list pricing.
-
-  **Example questions this mart can answer:**
-  - How does list pricing step up across tiers, and what is the effective saving for paying annually?
-  - Which tiers and billing intervals are actually being sold the most?
-  - How much revenue sits on plans that are no longer offered to new customers?
+description: "The price book: every sellable plan and price point — four tiers (Starter, Pro, Business, Enterprise), each offered monthly or annually, with its list price and whether it is currently sellable."
 tags: ["owox"]
 timestamp: 2026-07-23T12:51:26.000Z
 ---
@@ -20,7 +12,8 @@ The price book: every sellable plan and price point — four tiers (Starter, Pro
 Enterprise), each offered monthly or annually, with its list price and whether it is
 currently sellable. The reference that gives every subscription its list pricing.
 
-**Example questions this mart can answer:**
+# Examples
+
 - How does list pricing step up across tiers, and what is the effective saving for paying annually?
 - Which tiers and billing intervals are actually being sold the most?
 - How much revenue sits on plans that are no longer offered to new customers?

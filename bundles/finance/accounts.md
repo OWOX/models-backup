@@ -1,16 +1,7 @@
 ---
 type: "OWOX Data Mart"
 title: "Accounts"
-description: |
-  Every product a customer has opened — the funded relationships that turn a sign-up into
-  an active customer. Tracks how each holding was activated, its current balance, and
-  whether it is still active, dormant, frozen, closed, or written off. This is where you see
-  who actually became a funded customer and how healthy those relationships are.
-
-  **Example questions this mart can answer:**
-  - What share of opened accounts ever get activated, and how long does activation typically take?
-  - How are balances distributed across active versus dormant relationships?
-  - Which product types have the highest rate of accounts going dormant or being closed?
+description: "Every product a customer has opened — the funded relationships that turn a sign-up into an active customer."
 tags: ["owox"]
 timestamp: 2026-07-23T12:02:48.000Z
 ---
@@ -22,7 +13,8 @@ an active customer. Tracks how each holding was activated, its current balance, 
 whether it is still active, dormant, frozen, closed, or written off. This is where you see
 who actually became a funded customer and how healthy those relationships are.
 
-**Example questions this mart can answer:**
+# Examples
+
 - What share of opened accounts ever get activated, and how long does activation typically take?
 - How are balances distributed across active versus dormant relationships?
 - Which product types have the highest rate of accounts going dormant or being closed?

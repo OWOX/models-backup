@@ -350,22 +350,25 @@ class UniversalOkfFormatTests(unittest.TestCase):
         self.assertNotIn("## Overview", doc)
         self.assertNotIn("Data endpoint", doc)
         self.assertNotIn("Status:", doc)
-        self.assertIn("description: |", doc)  # full desc as block scalar
-        self.assertIn("Full desc line one.", doc)
+        fm = doc.split("---", 2)[1]
+        self.assertNotIn("description: |", fm)  # one-sentence frontmatter, not block scalar
+        self.assertIn('description: "Full desc line one."', fm)
+        self.assertIn("Full desc line one.", doc)  # full intro still present in body
 
     def test_index_table_single_column(self):
         from export import write_bundle
         import tempfile as _tempfile
         with _tempfile.TemporaryDirectory() as d:
             marts = [({"id": "M1", "title": "Customer", "definitionType": "VIEW",
-                       "storage": {"type": "GOOGLE_BIGQUERY"}}, "# Customer\n")]
+                       "storage": {"type": "GOOGLE_BIGQUERY"},
+                       "schema": {"fields": [{"name": "customer_id"}]}}, "# Customer\n")]
             write_bundle(d, marts, "finance", "Finance")
             idx = open(os.path.join(d, "finance", "index.md"), encoding="utf-8").read()
-        self.assertIn("| Data Mart |", idx)
+        self.assertIn("| Data Mart | Fields |", idx)
         self.assertNotIn("Type", idx)
         self.assertNotIn("Storage", idx)
         self.assertNotIn("GOOGLE_BIGQUERY", idx)
-        self.assertIn("[Customer](./customer.md)", idx)
+        self.assertIn("[Customer](./customer.md) | 1 |", idx)
 
     def test_render_frontmatter_block_scalar_leading_space_is_safe(self):
         import yaml
@@ -384,7 +387,9 @@ class UniversalOkfFormatTests(unittest.TestCase):
             write_bundle(d, marts, "finance", "Finance",
                          project_description="A lending business.\n\n**Example questions this model can answer:**\n- Q?")
             idx = open(os.path.join(d, "finance", "index.md"), encoding="utf-8").read()
-        self.assertIn("description: |", idx)
+        fm = idx.split("---", 2)[1]
+        self.assertNotIn("description: |", fm)
+        self.assertIn('description: "A lending business."', fm)
         self.assertIn("A lending business.", idx)
         self.assertNotIn("Index of exported OWOX data marts.", idx)
 
@@ -419,6 +424,59 @@ def test_write_bundle_preserves_manual_tail():
     assert GEN_START in idx and GEN_END in idx
     assert idx.index(GEN_END) < idx.index("## Diagram")   # manual tail after the block
     assert "![ERD](./erd.png)" in idx
+
+
+def test_split_description_marker_present():
+    from export import split_description
+    desc = ("Intro line one wraps\nto two lines.\n\n**Example questions this mart can answer:**\n"
+            "- Q one?\n- Q two?\n- Q three?")
+    intro, qs = split_description(desc)
+    assert intro == "Intro line one wraps\nto two lines."
+    assert qs == ["Q one?", "Q two?", "Q three?"]
+
+def test_split_description_no_marker():
+    from export import split_description
+    intro, qs = split_description("Just a plain description.")
+    assert intro == "Just a plain description." and qs == []
+
+def test_first_sentence():
+    from export import first_sentence
+    assert first_sentence("First one. Second two.") == "First one."
+    assert first_sentence("No period here") == "No period here"
+    long = "x" * 400
+    assert first_sentence(long).endswith("...") and len(first_sentence(long)) <= 300
+
+def test_data_mart_doc_examples_layout():
+    from export import render_data_mart_doc
+    mart = {"id": "M1", "title": "Marketing Spend",
+            "description": ("Marketing investment by channel. It funds acquisition.\n\n"
+                            "**Example questions this mart can answer:**\n- Q1?\n- Q2?\n- Q3?"),
+            "schema": {"fields": [{"name": "spend_id", "type": "STRING", "isPrimaryKey": True}]}}
+    doc = render_data_mart_doc(mart, "https://app.owox.com", None)
+    fm = doc.split("---", 2)[1]
+    assert "description: |" not in fm                       # one-line, not block scalar
+    assert 'description: "Marketing investment by channel."' in fm
+    assert "# Examples" in doc
+    assert "- Q1?" in doc and "- Q3?" in doc
+    # intro appears once in body, not the whole blob twice
+    assert doc.count("Marketing investment by channel.") >= 1
+    assert "**Example questions this mart can answer:**" not in doc  # moved to # Examples heading
+
+def test_index_fields_column_and_examples():
+    from export import write_bundle
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        marts = [({"id": "M1", "title": "Account",
+                   "schema": {"fields": [{"name": "a"}, {"name": "b"}, {"name": "c"}]}}, "# Account\n")]
+        write_bundle(d, marts, "saas", "SaaS",
+                     project_description="A SaaS business. It recurs.\n\n**Example questions this model can answer:**\n- Q1?")
+        idx = open(os.path.join(d, "saas", "index.md"), encoding="utf-8").read()
+    fm = idx.split("---", 2)[1]
+    assert "description: |" not in fm
+    assert 'description: "A SaaS business."' in fm
+    assert "| Data Mart | Fields |" in idx
+    assert "| [Account](./account.md) | 3 |" in idx
+    assert "# Examples" in idx and "- Q1?" in idx
 
 
 if __name__ == "__main__":

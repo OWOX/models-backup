@@ -248,6 +248,37 @@ def slugify(text, fallback):
     return s or fallback
 
 
+_QUESTIONS_MARKER_RE = re.compile(r"^\s*\*\*Example questions[^\n]*$", re.M)
+
+
+def split_description(desc):
+    """(intro_prose, [question, ...]) from a description shaped as
+    'intro...\n\n**Example questions ...:**\n- q1\n- q2'. ('', []) if empty;
+    (whole, []) if the marker is absent."""
+    desc = (desc or "").strip()
+    if not desc:
+        return "", []
+    m = _QUESTIONS_MARKER_RE.search(desc)
+    if not m:
+        return desc, []
+    intro = desc[:m.start()].strip()
+    questions = [ln.strip()[1:].strip() for ln in desc[m.end():].splitlines()
+                 if ln.strip().startswith("-")]
+    return intro, questions
+
+
+def first_sentence(text, limit=300):
+    """First sentence (newlines flattened) for the one-line frontmatter description."""
+    flat = " ".join((text or "").split())
+    if not flat:
+        return ""
+    idx = flat.find(". ")
+    sentence = flat if idx == -1 else flat[:idx + 1]
+    if len(sentence) > limit:
+        sentence = sentence[:limit - 3].rstrip() + "..."
+    return sentence
+
+
 class _Raw(str):
     """YAML scalar emitted unquoted (use for timestamps and other pre-formatted values)."""
 
@@ -339,18 +370,21 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
 
     tags = ["owox"]
 
-    full_desc = description.strip() or f"OWOX data mart '{title}'."
+    intro, questions = split_description(description)
+    summary = first_sentence(intro) or f"OWOX data mart '{title}'."
     frontmatter = render_frontmatter({
         "type": "OWOX Data Mart",
         "title": title,
-        "description": full_desc,
+        "description": summary,
         "tags": tags,
         "timestamp": modified,
     })
 
     body = [f"# {title}", ""]
-    if description.strip():
-        body += [description.strip(), ""]
+    if intro:
+        body += [intro, ""]
+    if questions:
+        body += ["# Examples", ""] + [f"- {q}" for q in questions] + [""]
 
     schema_section = render_schema_section(mart.get("schema"), fk=fk)
     if schema_section:
@@ -542,25 +576,29 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
         with open(os.path.join(marts_dir, fname), "w", encoding="utf-8") as fh:
             fh.write(doc)
         index_rows.append((mart.get("title") or mart_id, fname,
-                           mart.get("definitionType") or "",
-                           (mart.get("storage") or {}).get("type") or ""))
+                           len(extract_columns(mart.get("schema")))))
 
     def _safe_cell(text):
         return text.replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
 
     # <project_folder>/index.md
     before, after = preserved_regions
+    p_intro, p_questions = split_description(project_description or "")
     di = [render_frontmatter({
         "type": "index", "title": project_title,
-        "description": (project_description.strip() if project_description and project_description.strip()
-                        else "Index of exported OWOX data marts."),
+        "description": first_sentence(p_intro) or "Index of exported OWOX data marts.",
         "tags": ["owox", "index"], "timestamp": ts,
     }), ""]
     if before:
         di += [before, ""]
-    di += [GEN_START, "", f"# {project_title}", "", "| Data Mart |", "|-----------|"]
-    for title, fname, dtype, stype in sorted(index_rows):
-        di.append(f"| [{_safe_cell(title)}](./{fname}) |")
+    di += [GEN_START, "", f"# {project_title}", ""]
+    if p_intro:
+        di += [p_intro, ""]
+    if p_questions:
+        di += ["# Examples", ""] + [f"- {q}" for q in p_questions] + [""]
+    di += ["| Data Mart | Fields |", "|-----------|--------|"]
+    for title, fname, nfields in sorted(index_rows):
+        di.append(f"| [{_safe_cell(title)}](./{fname}) | {nfields} |")
     di += [GEN_END]
     if after:
         di += ["", after]
