@@ -376,6 +376,18 @@ class UniversalOkfFormatTests(unittest.TestCase):
         self.assertIn("Leading space first line.", parsed["description"])
         self.assertIn("Second line.", parsed["description"])
 
+    def test_index_uses_project_description(self):
+        from export import write_bundle
+        import tempfile, os
+        with tempfile.TemporaryDirectory() as d:
+            marts = [({"id": "M1", "title": "Customer"}, "# Customer\n")]
+            write_bundle(d, marts, "finance", "Finance",
+                         project_description="A lending business.\n\n**Example questions this model can answer:**\n- Q?")
+            idx = open(os.path.join(d, "finance", "index.md"), encoding="utf-8").read()
+        self.assertIn("description: |", idx)
+        self.assertIn("A lending business.", idx)
+        self.assertNotIn("Index of exported OWOX data marts.", idx)
+
 
 if __name__ == "__main__":
     unittest.main()

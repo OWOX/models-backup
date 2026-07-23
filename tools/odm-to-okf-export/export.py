@@ -146,6 +146,11 @@ def list_data_storages(api_origin, headers):
     return data.get("items", data) if isinstance(data, dict) else (data or [])
 
 
+def get_project_settings(api_origin, headers):
+    """Project-level settings, including the human/AI description shown on the index."""
+    return _http_json("GET", f"{api_origin}/api/projects/settings", headers=headers) or {}
+
+
 def filter_marts_by_storage(marts, storages, storage_id):
     """Keep only marts sitting on `storage_id`.
 
@@ -482,7 +487,7 @@ def collect_bundles(out_dir):
 
 
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
-                 join_indexes=None):
+                 join_indexes=None, project_description=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
     project_folder: slugified OWOX project name used as the subfolder name.
     join_indexes: {mart_id: build_join_index(...)} for real join keys."""
@@ -512,7 +517,8 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     # <project_folder>/index.md
     di = [render_frontmatter({
         "type": "index", "title": project_title,
-        "description": "Index of exported OWOX data marts.",
+        "description": (project_description.strip() if project_description and project_description.strip()
+                        else "Index of exported OWOX data marts."),
         "tags": ["owox", "index"], "timestamp": ts,
     }), "", f"# {project_title}", "", "| Data Mart |", "|-----------|"]
     for title, fname, dtype, stype in sorted(index_rows):
@@ -1080,6 +1086,7 @@ def main():
     api_origin, api_key_id, api_key_secret = parse_api_key(args.api_key)
     token = exchange_for_token(api_origin, api_key_id, api_key_secret)
     headers = auth_headers(token, api_key_id)
+    project_description = (get_project_settings(api_origin, headers) or {}).get("description")
     project_title = project_title_from_token(token)
     display_title = args.title or project_title or "Data Marts"
     project_folder = slugify(args.folder, "data-marts") if args.folder else slugify(project_title, "data-marts")
@@ -1136,7 +1143,7 @@ def main():
     if os.path.isdir(bundle_dir):
         shutil.rmtree(bundle_dir)
     count = write_bundle(args.out, marts_with_docs, project_folder, display_title,
-                         join_indexes=join_indexes)
+                         join_indexes=join_indexes, project_description=project_description)
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
     if args.viz:
