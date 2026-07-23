@@ -389,5 +389,37 @@ class UniversalOkfFormatTests(unittest.TestCase):
         self.assertNotIn("Index of exported OWOX data marts.", idx)
 
 
+def test_read_preserved_regions_captures_after_block():
+    from export import read_preserved_regions, GEN_START, GEN_END
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, "index.md")
+        open(p, "w", encoding="utf-8").write(
+            f"---\ntype: index\n---\n\n{GEN_START}\n# Finance\n{GEN_END}\n\n## Diagram\n![ERD](./erd.png)\n")
+        before, after = read_preserved_regions(p)
+    assert before == ""
+    assert "## Diagram" in after and "![ERD](./erd.png)" in after
+
+def test_read_preserved_regions_none_without_sentinels():
+    from export import read_preserved_regions
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, "index.md")
+        open(p, "w", encoding="utf-8").write("---\ntype: index\n---\n\n# Finance\n\n![ERD](./erd.png)\n")
+        assert read_preserved_regions(p) == ("", "")
+
+def test_write_bundle_preserves_manual_tail():
+    from export import write_bundle, GEN_START, GEN_END
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        marts = [({"id": "M1", "title": "Customer"}, "# Customer\n")]
+        write_bundle(d, marts, "finance", "Finance",
+                     preserved_regions=("", "## Diagram\n![ERD](./erd.png)"))
+        idx = open(os.path.join(d, "finance", "index.md"), encoding="utf-8").read()
+    assert GEN_START in idx and GEN_END in idx
+    assert idx.index(GEN_END) < idx.index("## Diagram")   # manual tail after the block
+    assert "![ERD](./erd.png)" in idx
+
+
 if __name__ == "__main__":
     unittest.main()
