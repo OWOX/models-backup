@@ -367,6 +367,15 @@ class UniversalOkfFormatTests(unittest.TestCase):
         self.assertNotIn("GOOGLE_BIGQUERY", idx)
         self.assertIn("[Customer](./customer.md)", idx)
 
+    def test_render_frontmatter_block_scalar_leading_space_is_safe(self):
+        import yaml
+        from export import render_frontmatter
+        fm = render_frontmatter({"type": "OWOX Data Mart", "title": "X",
+                                 "description": " Leading space first line.\nSecond line.", "tags": ["owox"]})
+        parsed = yaml.safe_load(fm.replace("---\n", "", 1).rsplit("\n---", 1)[0])
+        self.assertIn("Leading space first line.", parsed["description"])
+        self.assertIn("Second line.", parsed["description"])
+
 
 if __name__ == "__main__":
     unittest.main()

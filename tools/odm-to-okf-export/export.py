@@ -268,8 +268,9 @@ def render_frontmatter(fields):
         if isinstance(val, (list, tuple)):
             lines.append(f"{key}: {yaml_list(val)}")
         elif isinstance(val, str) and "\n" in val and not isinstance(val, _Raw):
+            block = val.strip()  # leading/trailing WS would break block-scalar indentation
             lines.append(f"{key}: |")
-            for ln in val.rstrip("\n").split("\n"):
+            for ln in block.split("\n"):
                 lines.append(f"  {ln}" if ln.strip() else "")
         else:
             lines.append(f"{key}: {yaml_scalar(val)}")
