@@ -1,18 +1,17 @@
 ---
 type: "OWOX Data Mart"
 title: "Invoices"
-description: "Every invoice and how it was paid — amount, tax, discounts and credits, payment status, and where it sits in the dunning cycle when a payment fails."
+description: |
+  Every invoice and how it was paid — amount, tax, discounts and credits, payment status, and
+  where it sits in the dunning cycle when a payment fails. This is where voluntary revenue meets
+  involuntary churn: failed payments and collections stages that quietly erode the customer base.
 tags: ["owox"]
 timestamp: 2026-07-23T12:51:26.000Z
 ---
 
 # Invoices
 
-Every invoice and how it was paid — amount, tax, discounts and credits, payment status, and
-where it sits in the dunning cycle when a payment fails. This is where voluntary revenue meets
-involuntary churn: failed payments and collections stages that quietly erode the customer base.
-
-# Examples
+# Example Questions
 
 - How much revenue is lost to failed payments, and how much does dunning recover before write-off?
 - Which accounts are slipping through the collections stages toward involuntary churn?
