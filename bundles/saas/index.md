@@ -6,6 +6,8 @@ tags: ["owox", "index"]
 timestamp: 2026-07-21T13:41:32Z
 ---
 
+<img width="2547" height="1324" alt="CleanShot 2026-07-23 at 15 16 54@2x" src="https://github.com/user-attachments/assets/79cf37a1-a82b-4adb-b7e7-b1c36b8fc228" />
+
 # SaaS
 
 | Data Mart | Type | Storage |
