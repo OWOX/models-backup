@@ -372,10 +372,9 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
         "timestamp": modified,
     })
 
-    body = [f"# {title}", ""]
-    if questions:
-        body += ["# Example Questions", ""] + [f"- {q}" for q in questions] + [""]
-
+    # No "# {title}" heading in the body — the title already lives in the frontmatter.
+    # Schema first (the main content), then example questions after it.
+    body = []
     schema_section = render_schema_section(mart.get("schema"), fk=fk)
     if schema_section:
         body += [schema_section, ""]
@@ -392,6 +391,9 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
             "```",
             "",
         ]
+
+    if questions:
+        body += ["# Example Questions", ""] + [f"- {q}" for q in questions] + [""]
 
     return frontmatter + "\n\n" + "\n".join(body).rstrip() + "\n"
 
@@ -581,13 +583,14 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     }), ""]
     if before:
         di += [before, ""]
-    di += [GEN_START, "", f"# {project_title}", ""]
-    if p_questions:
-        di += ["# Example Questions", ""] + [f"- {q}" for q in p_questions] + [""]
-    di += ["| Data Mart | Fields |", "|-----------|--------|"]
+    # No "# {project_title}" heading — the title is already in the frontmatter. The Data
+    # Mart table is the main content; example questions come after it.
+    di += [GEN_START, "", "| Data Mart | Fields |", "|-----------|--------|"]
     for title, fname, nfields in sorted(index_rows):
         di.append(f"| [{_safe_cell(title)}](./{fname}) | {nfields} |")
-    di += [GEN_END]
+    if p_questions:
+        di += ["", "# Example Questions", ""] + [f"- {q}" for q in p_questions]
+    di += ["", GEN_END]
     if after:
         di += ["", after]
     with open(os.path.join(marts_dir, "index.md"), "w", encoding="utf-8") as fh:

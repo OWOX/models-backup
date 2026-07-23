@@ -9,14 +9,6 @@ tags: ["owox"]
 timestamp: 2026-07-23T12:51:28.000Z
 ---
 
-# Usage (daily)
-
-# Example Questions
-
-- How does product engagement in the first weeks predict whether an account converts and expands?
-- Which accounts are quietly disengaging — falling active minutes or narrowing feature use — before they churn?
-- Does broader feature adoption go hand in hand with higher retention and revenue?
-
 # Schema
 
 | Column | Type | Description |
@@ -28,6 +20,12 @@ timestamp: 2026-07-23T12:51:28.000Z
 | `active_minutes` | INTEGER | Minutes the user was active in-product. |
 | `key_actions` | INTEGER | Count of high-value actions taken. |
 | `distinct_features_used` | INTEGER | Count of distinct product features touched that day — activation breadth. |
+
+# Example Questions
+
+- How does product engagement in the first weeks predict whether an account converts and expands?
+- Which accounts are quietly disengaging — falling active minutes or narrowing feature use — before they churn?
+- Does broader feature adoption go hand in hand with higher retention and revenue?
 
 ## Joins
 

@@ -10,14 +10,6 @@ tags: ["owox"]
 timestamp: 2026-07-23T12:51:27.000Z
 ---
 
-# Subscription Events
-
-# Example Questions
-
-- What does the revenue waterfall look like month to month — how much new, expansion, contraction and churned revenue?
-- What are gross and net revenue retention, and which is trending the wrong way?
-- How much of expansion comes from seat growth versus tier upgrades?
-
 # Schema
 
 | Column | Type | Description |
@@ -32,6 +24,12 @@ timestamp: 2026-07-23T12:51:27.000Z
 | `mrr_delta` | NUMERIC | Signed MRR change — the MRR-movement waterfall. |
 | `seats_delta` | INTEGER | Signed change in seat count. |
 | `mrr_after` | NUMERIC | Total MRR after the change. |
+
+# Example Questions
+
+- What does the revenue waterfall look like month to month — how much new, expansion, contraction and churned revenue?
+- What are gross and net revenue retention, and which is trending the wrong way?
+- How much of expansion comes from seat growth versus tier upgrades?
 
 ## Joins
 

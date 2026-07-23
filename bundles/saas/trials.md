@@ -9,14 +9,6 @@ tags: ["owox"]
 timestamp: 2026-07-23T12:51:27.000Z
 ---
 
-# Trials
-
-# Example Questions
-
-- What is the trial-to-paid conversion rate, and how does it differ by trial source?
-- How long do trials take to convert, and does evaluating a higher tier change the odds?
-- Which trial sources bring in the accounts that go on to be worth the most?
-
 # Schema
 
 | Column | Type | Description |
@@ -29,6 +21,12 @@ timestamp: 2026-07-23T12:51:27.000Z
 | `is_converted` | BOOLEAN | Trial-to-paid outcome flag. |
 | `trial_source` | STRING | Where the trial came from (self-serve, sales-assisted, PLG upsell). |
 | `requested_plan` | STRING | Plan tier the trial is evaluating. |
+
+# Example Questions
+
+- What is the trial-to-paid conversion rate, and how does it differ by trial source?
+- How long do trials take to convert, and does evaluating a higher tier change the odds?
+- Which trial sources bring in the accounts that go on to be worth the most?
 
 ## Joins
 

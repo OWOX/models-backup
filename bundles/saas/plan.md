@@ -9,14 +9,6 @@ tags: ["owox"]
 timestamp: 2026-07-23T12:51:26.000Z
 ---
 
-# Plan
-
-# Example Questions
-
-- How does list pricing step up across tiers, and what is the effective saving for paying annually?
-- Which tiers and billing intervals are actually being sold the most?
-- How much revenue sits on plans that are no longer offered to new customers?
-
 # Schema
 
 | Column | Type | Description |
@@ -28,3 +20,9 @@ timestamp: 2026-07-23T12:51:26.000Z
 | `list_price` | NUMERIC | Published list price for this plan at this interval. |
 | `currency` | STRING | Currency of the list price. |
 | `is_active` | BOOLEAN | Whether the plan is currently sellable. |
+
+# Example Questions
+
+- How does list pricing step up across tiers, and what is the effective saving for paying annually?
+- Which tiers and billing intervals are actually being sold the most?
+- How much revenue sits on plans that are no longer offered to new customers?

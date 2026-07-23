@@ -355,6 +355,7 @@ class UniversalOkfFormatTests(unittest.TestCase):
         self.assertIn("description: |", fm)
         self.assertIn("Full desc line one.", fm)
         self.assertIn("More.", fm)
+        self.assertNotIn("# Customer", doc)  # no duplicated title heading in the body
 
     def test_index_table_single_column(self):
         from export import write_bundle
@@ -452,8 +453,10 @@ def test_data_mart_doc_full_description_and_example_questions():
     body = doc.split("---", 2)[2]
     # FULL description (both sentences) in frontmatter — canvas import reads it verbatim
     assert yaml.safe_load(fm)["description"].strip() == "Marketing investment by channel. It funds acquisition."
-    # questions under their own heading in the body; intro NOT duplicated in the body
+    # no duplicated title heading; questions under their own heading AFTER the schema
+    assert "# Marketing Spend" not in doc
     assert "# Example Questions" in body
+    assert body.index("# Schema") < body.index("# Example Questions")
     assert "- Q1?" in body and "- Q3?" in body
     assert "Marketing investment by channel." not in body
     assert "**Example questions this mart can answer:**" not in doc  # marker stripped
@@ -473,7 +476,9 @@ def test_index_fields_column_and_example_questions():
     assert yaml.safe_load(fm)["description"].strip() == "A SaaS business. It recurs."   # full, not one sentence
     assert "| Data Mart | Fields |" in idx
     assert "| [Account](./account.md) | 3 |" in idx
+    assert "# SaaS" not in idx              # no duplicated title heading in the body
     assert "# Example Questions" in body and "- Q1?" in body
+    assert idx.index("| Data Mart | Fields |") < idx.index("# Example Questions")  # questions under the table
     assert "A SaaS business." not in body   # description not duplicated in the body
 
 
