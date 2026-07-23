@@ -33,3 +33,5 @@ timestamp: 2026-07-23T13:18:49Z
 | [Usage (daily)](./usage-daily.md) |
 | [User](./user.md) |
 <!-- OWOX:GENERATED:END -->
+
+<img width="2547" height="1324" alt="CleanShot 2026-07-23 at 15 16 54@2x" src="https://github.com/user-attachments/assets/8156374b-007b-4da5-9cad-18cec0118779" />
