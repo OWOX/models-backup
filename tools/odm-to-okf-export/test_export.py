@@ -324,5 +324,49 @@ class BuildVizDataTests(unittest.TestCase):
         self.assertEqual(by_id["saas/no_frontmatter"]["label"], "no_frontmatter")
 
 
+class UniversalOkfFormatTests(unittest.TestCase):
+    def test_render_frontmatter_block_scalar_roundtrips(self):
+        import yaml  # test-only; exporter runtime stays stdlib
+        from export import render_frontmatter
+        desc = "Para line one.\nPara line two.\n\n**Example questions this mart can answer:**\n- Q1?\n- Q2?"
+        fm = render_frontmatter({"type": "OWOX Data Mart", "title": "Customer", "description": desc,
+                                 "tags": ["owox"]})
+        self.assertIn("description: |", fm)
+        parsed = yaml.safe_load(fm.replace("---\n", "", 1).rsplit("\n---", 1)[0])
+        self.assertTrue(parsed["description"].startswith("Para line one."))
+        self.assertIn("Example questions", parsed["description"])
+        self.assertEqual(parsed["tags"], ["owox"])
+
+    def test_data_mart_doc_universal_shape(self):
+        from export import render_data_mart_doc
+        mart = {"id": "M1", "title": "Customer", "description": "Full desc line one.\n\nMore.",
+                "definitionType": "VIEW", "status": "PUBLISHED",
+                "storage": {"type": "GOOGLE_BIGQUERY", "title": "BigQuery"},
+                "schema": {"fields": [{"name": "customer_id", "type": "STRING", "isPrimaryKey": True,
+                                       "description": "PK."}]}}
+        doc = render_data_mart_doc(mart, "https://app.owox.com", None)
+        self.assertNotIn("resource:", doc)
+        self.assertIn('tags: ["owox"]', doc)
+        self.assertNotIn("## Overview", doc)
+        self.assertNotIn("Data endpoint", doc)
+        self.assertNotIn("Status:", doc)
+        self.assertIn("description: |", doc)  # full desc as block scalar
+        self.assertIn("Full desc line one.", doc)
+
+    def test_index_table_single_column(self):
+        from export import write_bundle
+        import tempfile as _tempfile
+        with _tempfile.TemporaryDirectory() as d:
+            marts = [({"id": "M1", "title": "Customer", "definitionType": "VIEW",
+                       "storage": {"type": "GOOGLE_BIGQUERY"}}, "# Customer\n")]
+            write_bundle(d, marts, "finance", "Finance")
+            idx = open(os.path.join(d, "finance", "index.md"), encoding="utf-8").read()
+        self.assertIn("| Data Mart |", idx)
+        self.assertNotIn("Type", idx)
+        self.assertNotIn("Storage", idx)
+        self.assertNotIn("GOOGLE_BIGQUERY", idx)
+        self.assertIn("[Customer](./customer.md)", idx)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -267,6 +267,10 @@ def render_frontmatter(fields):
             continue
         if isinstance(val, (list, tuple)):
             lines.append(f"{key}: {yaml_list(val)}")
+        elif isinstance(val, str) and "\n" in val and not isinstance(val, _Raw):
+            lines.append(f"{key}: |")
+            for ln in val.rstrip("\n").split("\n"):
+                lines.append(f"  {ln}" if ln.strip() else "")
         else:
             lines.append(f"{key}: {yaml_scalar(val)}")
     lines.append("---")
@@ -324,32 +328,16 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
     mart_id = mart.get("id", "")
     title = mart.get("title") or mart_id
     description = mart.get("description") or ""
-    definition_type = mart.get("definitionType") or ""
-    status = mart.get("status") or ""
-    storage = mart.get("storage") or {}
-    storage_type = storage.get("type") or ""
-    storage_title = storage.get("title") or ""
     modified = _Raw(mart.get("modifiedAt") or now_iso())
     data_url = f"{api_origin}{DATA_NDJSON_PATH.format(id=mart_id)}"
 
     tags = ["owox"]
-    if storage_type:
-        tags.append(storage_type.lower())
-    if definition_type:
-        tags.append(definition_type.lower())
-    if mart.get("connectorSourceName"):
-        tags.append(slugify(mart["connectorSourceName"], "connector"))
 
-    short_desc = (description.strip().splitlines()[0] if description.strip()
-                  else f"OWOX data mart '{title}'.")
-    if len(short_desc) > 200:
-        short_desc = short_desc[:197] + "..."
-
+    full_desc = description.strip() or f"OWOX data mart '{title}'."
     frontmatter = render_frontmatter({
         "type": "OWOX Data Mart",
         "title": title,
-        "description": short_desc,
-        "resource": data_url,
+        "description": full_desc,
         "tags": tags,
         "timestamp": modified,
     })
@@ -357,16 +345,6 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
     body = [f"# {title}", ""]
     if description.strip():
         body += [description.strip(), ""]
-    body += [
-        "## Overview",
-        "",
-        f"- **ID:** `{mart_id}`",
-        f"- **Status:** {status}",
-        f"- **Definition type:** {definition_type}",
-        f"- **Storage:** {storage_title} ({storage_type})".replace(" ()", ""),
-        f"- **Data endpoint:** `GET {data_url}`",
-        "",
-    ]
 
     schema_section = render_schema_section(mart.get("schema"), fk=fk)
     if schema_section:
@@ -377,7 +355,7 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
         body += [
             f"## Sample (first {len(sample_rows)} rows)",
             "",
-            "> Preview only — the full dataset lives at the data endpoint above.",
+            f"> Preview only — the full dataset is available at `{data_url}`.",
             "",
             "```json",
             preview,
@@ -535,11 +513,9 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
         "type": "index", "title": project_title,
         "description": "Index of exported OWOX data marts.",
         "tags": ["owox", "index"], "timestamp": ts,
-    }), "", f"# {project_title}", "", "| Data Mart | Type | Storage |",
-        "|-----------|------|---------|"]
+    }), "", f"# {project_title}", "", "| Data Mart |", "|-----------|"]
     for title, fname, dtype, stype in sorted(index_rows):
-        safe_title = _safe_cell(title)
-        di.append(f"| [{safe_title}](./{fname}) | {_safe_cell(dtype)} | {_safe_cell(stype)} |")
+        di.append(f"| [{_safe_cell(title)}](./{fname}) |")
     with open(os.path.join(marts_dir, "index.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(di) + "\n")
 
