@@ -1,23 +1,10 @@
 ---
 type: "OWOX Data Mart"
 title: "🥈 Visitors (E-Commerce)"
-description: "This dataset provides a comprehensive overview of website visitor behavior and acquisition history at the individual visitor level. It tracks engagement metrics like total sessions and visit dates ..."
-resource: "https://app.owox.com/api/external/http-data/data-marts/13e040df-a062-4f38-803b-54a7e0b75a3e.ndjson"
-tags: ["owox", "google_bigquery", "view"]
+description: "This dataset provides a comprehensive overview of website visitor behavior and acquisition history at the individual visitor level. It tracks engagement metrics like total sessions and visit dates alongside marketing attribution details to help analyze user retention and campaign effectiveness."
+tags: ["owox"]
 timestamp: 2026-07-17T14:28:27.000Z
 ---
-
-# 🥈 Visitors (E-Commerce)
-
-This dataset provides a comprehensive overview of website visitor behavior and acquisition history at the individual visitor level. It tracks engagement metrics like total sessions and visit dates alongside marketing attribution details to help analyze user retention and campaign effectiveness.
-
-## Overview
-
-- **ID:** `13e040df-a062-4f38-803b-54a7e0b75a3e`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/13e040df-a062-4f38-803b-54a7e0b75a3e.ndjson`
 
 # Schema
 

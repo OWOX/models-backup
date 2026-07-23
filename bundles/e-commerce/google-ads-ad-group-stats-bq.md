@@ -1,24 +1,12 @@
 ---
 type: "OWOX Data Mart"
 title: "Google Ads Ad Group Stats BQ"
-description: "Google Ads Ad Group Stats. "
-resource: "https://app.owox.com/api/external/http-data/data-marts/9e9035ea-1ab3-44a6-a2a5-f1bf2744dc19.ndjson"
-tags: ["owox", "google_bigquery", "connector"]
+description: |
+  Google Ads Ad Group Stats. 
+  Ad group granularity.
+tags: ["owox"]
 timestamp: 2026-05-26T20:09:19.000Z
 ---
-
-# Google Ads Ad Group Stats BQ
-
-Google Ads Ad Group Stats. 
-Ad group granularity.
-
-## Overview
-
-- **ID:** `9e9035ea-1ab3-44a6-a2a5-f1bf2744dc19`
-- **Status:** PUBLISHED
-- **Definition type:** CONNECTOR
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/9e9035ea-1ab3-44a6-a2a5-f1bf2744dc19.ndjson`
 
 # Schema
 

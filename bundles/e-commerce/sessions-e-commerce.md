@@ -1,23 +1,10 @@
 ---
 type: "OWOX Data Mart"
 title: "🥈 Sessions (E-Commerce)"
-description: "This Data Mart provides a detailed log of individual e-commerce browsing sessions, including traffic sources, device types, and conversion outcomes. It is primarily used to analyze user behavior, m..."
-resource: "https://app.owox.com/api/external/http-data/data-marts/22a66e81-1ce3-4c0a-8ead-3a154df490ab.ndjson"
-tags: ["owox", "google_bigquery", "view"]
+description: "This Data Mart provides a detailed log of individual e-commerce browsing sessions, including traffic sources, device types, and conversion outcomes. It is primarily used to analyze user behavior, marketing attribution, and website performance across different geographic regions."
+tags: ["owox"]
 timestamp: 2026-07-16T02:42:23.000Z
 ---
-
-# 🥈 Sessions (E-Commerce)
-
-This Data Mart provides a detailed log of individual e-commerce browsing sessions, including traffic sources, device types, and conversion outcomes. It is primarily used to analyze user behavior, marketing attribution, and website performance across different geographic regions.
-
-## Overview
-
-- **ID:** `22a66e81-1ce3-4c0a-8ead-3a154df490ab`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/22a66e81-1ce3-4c0a-8ead-3a154df490ab.ndjson`
 
 # Schema
 

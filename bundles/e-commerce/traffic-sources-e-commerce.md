@@ -1,23 +1,10 @@
 ---
 type: "OWOX Data Mart"
 title: "🥈 Traffic Sources (E-Commerce)"
-description: "This Data Mart provides a comprehensive breakdown of website traffic origins, categorizing visitors by source, medium, and specific marketing campaigns. It is used to analyze the effectiveness of d..."
-resource: "https://app.owox.com/api/external/http-data/data-marts/61b3c045-b334-440d-9913-bf52bc622af4.ndjson"
-tags: ["owox", "google_bigquery", "view"]
+description: "This Data Mart provides a comprehensive breakdown of website traffic origins, categorizing visitors by source, medium, and specific marketing campaigns. It is used to analyze the effectiveness of different acquisition channels and distinguish between paid and organic traffic performance."
+tags: ["owox"]
 timestamp: 2026-07-16T14:08:48.000Z
 ---
-
-# 🥈 Traffic Sources (E-Commerce)
-
-This Data Mart provides a comprehensive breakdown of website traffic origins, categorizing visitors by source, medium, and specific marketing campaigns. It is used to analyze the effectiveness of different acquisition channels and distinguish between paid and organic traffic performance.
-
-## Overview
-
-- **ID:** `61b3c045-b334-440d-9913-bf52bc622af4`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/61b3c045-b334-440d-9913-bf52bc622af4.ndjson`
 
 # Schema
 

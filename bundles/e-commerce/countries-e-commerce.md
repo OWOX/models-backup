@@ -2,20 +2,9 @@
 type: "OWOX Data Mart"
 title: "🥈 Countries (E-Commerce)"
 description: "OWOX data mart '🥈 Countries (E-Commerce)'."
-resource: "https://app.owox.com/api/external/http-data/data-marts/bad7e127-2352-4663-8b68-cbd06a9c0eb7.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-19T18:25:08.000Z
+tags: ["owox"]
+timestamp: 2026-07-21T01:38:40.000Z
 ---
-
-# 🥈 Countries (E-Commerce)
-
-## Overview
-
-- **ID:** `bad7e127-2352-4663-8b68-cbd06a9c0eb7`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/bad7e127-2352-4663-8b68-cbd06a9c0eb7.ndjson`
 
 # Schema
 

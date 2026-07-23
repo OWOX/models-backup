@@ -1,27 +1,15 @@
 ---
 type: "OWOX Data Mart"
 title: "🥈 Purchases (E-Commerce)"
-description: "Describes typical Purchases Data Mart in e-commerce domain for demo puprposes."
-resource: "https://app.owox.com/api/external/http-data/data-marts/0212efac-2c7d-4bcb-aaf2-055229de4b75.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-19T16:01:49.000Z
+description: |
+  Describes typical Purchases Data Mart in e-commerce domain for demo puprposes.
+
+  This Data Mart acts as the foundational layer for understanding purchasing behavior and sales performance. By breaking down transactions into specific line items, it enables the business to move beyond simple revenue tracking and dive deep into SKU-level analytics. Whether you are analyzing sales trends by currency or evaluating the quantity of specific products sold, this data provides the necessary precision for informed decision-making.
+
+  The schema is built for flexibility and scalability, supporting multi-currency transactions and varying product quantities per order. It provides a clean, standardized output that allows analysts to quickly generate insights into which products drive growth and how pricing strategies impact customer purchasing habits at the point of sale.
+tags: ["owox"]
+timestamp: 2026-07-23T16:01:54.000Z
 ---
-
-# 🥈 Purchases (E-Commerce)
-
-Describes typical Purchases Data Mart in e-commerce domain for demo puprposes.
-
-This Data Mart acts as the foundational layer for understanding purchasing behavior and sales performance. By breaking down transactions into specific line items, it enables the business to move beyond simple revenue tracking and dive deep into SKU-level analytics. Whether you are analyzing sales trends by currency or evaluating the quantity of specific products sold, this data provides the necessary precision for informed decision-making.
-
-The schema is built for flexibility and scalability, supporting multi-currency transactions and varying product quantities per order. It provides a clean, standardized output that allows analysts to quickly generate insights into which products drive growth and how pricing strategies impact customer purchasing habits at the point of sale.
-
-## Overview
-
-- **ID:** `0212efac-2c7d-4bcb-aaf2-055229de4b75`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/0212efac-2c7d-4bcb-aaf2-055229de4b75.ndjson`
 
 # Schema
 

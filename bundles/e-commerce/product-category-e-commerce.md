@@ -1,23 +1,10 @@
 ---
 type: "OWOX Data Mart"
 title: "🥈 Product Category (E-Commerce)"
-description: "This Data Mart provides a comprehensive list of product categories, their management hierarchy, and financial performance targets. It is used to analyze category-level organizational structure and ..."
-resource: "https://app.owox.com/api/external/http-data/data-marts/f33bb078-1183-4951-8b8b-8010f7c91d3f.ndjson"
-tags: ["owox", "google_bigquery", "view"]
+description: "This Data Mart provides a comprehensive list of product categories, their management hierarchy, and financial performance targets. It is used to analyze category-level organizational structure and monitor target profit margins across different business groups."
+tags: ["owox"]
 timestamp: 2026-05-26T20:02:01.000Z
 ---
-
-# 🥈 Product Category (E-Commerce)
-
-This Data Mart provides a comprehensive list of product categories, their management hierarchy, and financial performance targets. It is used to analyze category-level organizational structure and monitor target profit margins across different business groups.
-
-## Overview
-
-- **ID:** `f33bb078-1183-4951-8b8b-8010f7c91d3f`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/f33bb078-1183-4951-8b8b-8010f7c91d3f.ndjson`
 
 # Schema
 

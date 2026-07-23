@@ -1,23 +1,10 @@
 ---
 type: "OWOX Data Mart"
 title: "Purchases List"
-description: "This dataset contains detailed transaction records at the line-item level, including product quantities, pricing, and profitability metrics. It is primarily used to analyze sales performance, calcu..."
-resource: "https://app.owox.com/api/external/http-data/data-marts/d57170ef-8de5-4475-bbfb-61b20a72b051.ndjson"
-tags: ["owox", "google_bigquery", "view"]
+description: "This dataset contains detailed transaction records at the line-item level, including product quantities, pricing, and profitability metrics. It is primarily used to analyze sales performance, calculate margins, and track net revenue after adjustments."
+tags: ["owox"]
 timestamp: 2026-07-16T11:08:35.000Z
 ---
-
-# Purchases List
-
-This dataset contains detailed transaction records at the line-item level, including product quantities, pricing, and profitability metrics. It is primarily used to analyze sales performance, calculate margins, and track net revenue after adjustments.
-
-## Overview
-
-- **ID:** `d57170ef-8de5-4475-bbfb-61b20a72b051`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/d57170ef-8de5-4475-bbfb-61b20a72b051.ndjson`
 
 # Schema
 

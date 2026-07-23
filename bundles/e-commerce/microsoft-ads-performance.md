@@ -2,20 +2,9 @@
 type: "OWOX Data Mart"
 title: "Microsoft Ads Performance"
 description: "OWOX data mart 'Microsoft Ads Performance'."
-resource: "https://app.owox.com/api/external/http-data/data-marts/a26d2865-cea5-4fe9-8cd8-a62e8e63f832.ndjson"
-tags: ["owox", "google_bigquery", "connector"]
+tags: ["owox"]
 timestamp: 2026-05-26T20:07:10.000Z
 ---
-
-# Microsoft Ads Performance
-
-## Overview
-
-- **ID:** `a26d2865-cea5-4fe9-8cd8-a62e8e63f832`
-- **Status:** PUBLISHED
-- **Definition type:** CONNECTOR
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/a26d2865-cea5-4fe9-8cd8-a62e8e63f832.ndjson`
 
 # Schema
 

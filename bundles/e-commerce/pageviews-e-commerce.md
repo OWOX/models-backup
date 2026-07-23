@@ -2,20 +2,9 @@
 type: "OWOX Data Mart"
 title: "🥈 Pageviews (E-Commerce)"
 description: "OWOX data mart '🥈 Pageviews (E-Commerce)'."
-resource: "https://app.owox.com/api/external/http-data/data-marts/ebcc639a-e474-418a-8f62-36e222c61e2e.ndjson"
-tags: ["owox", "google_bigquery", "view"]
+tags: ["owox"]
 timestamp: 2026-05-26T20:00:22.000Z
 ---
-
-# 🥈 Pageviews (E-Commerce)
-
-## Overview
-
-- **ID:** `ebcc639a-e474-418a-8f62-36e222c61e2e`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/ebcc639a-e474-418a-8f62-36e222c61e2e.ndjson`
 
 # Schema
 

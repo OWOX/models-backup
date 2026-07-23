@@ -1,23 +1,14 @@
 ---
 type: "OWOX Data Mart"
 title: "Repayments"
-description: "The repayment schedule for every funded loan and how each installment actually played out — paid on time, paid late, or missed."
+description: |
+  The repayment schedule for every funded loan and how each installment actually played
+  out — paid on time, paid late, or missed. Tracks how far behind each loan falls, the
+  principal still outstanding, and the point at which a loan is written off. This is where
+  the health of the loan book, and the losses building in it, become visible.
 tags: ["owox"]
 timestamp: 2026-07-23T12:02:49.000Z
 ---
-
-# Repayments
-
-The repayment schedule for every funded loan and how each installment actually played
-out — paid on time, paid late, or missed. Tracks how far behind each loan falls, the
-principal still outstanding, and the point at which a loan is written off. This is where
-the health of the loan book, and the losses building in it, become visible.
-
-# Examples
-
-- How does the rate of loans falling 90+ days behind differ across risk tiers?
-- What share of lent principal ends up written off, and how does that build over the life of a loan?
-- How many delinquent loans recover and return to good standing versus rolling into write-off?
 
 # Schema
 
@@ -32,6 +23,12 @@ the health of the loan book, and the losses building in it, become visible.
 | `days_past_due` | INTEGER | DPD; progresses through the 0 / 30 / 60 / 90 / 120+ ladder per loan (roll-rate mechanics), not an independent draw. Conditioned on `risk_band`. |
 | `outstanding_principal` | NUMERIC | Remaining principal after this installment — enables dollar-weighted roll-rate and vintage analysis. |
 | `is_charged_off` | BOOLEAN | True only once cumulative DPD crosses the charge-off threshold (FFIEC: 120 days installment / 180 days revolving). |
+
+# Example Questions
+
+- How does the rate of loans falling 90+ days behind differ across risk tiers?
+- What share of lent principal ends up written off, and how does that build over the life of a loan?
+- How many delinquent loans recover and return to good standing versus rolling into write-off?
 
 ## Joins
 

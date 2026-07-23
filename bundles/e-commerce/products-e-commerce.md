@@ -1,23 +1,10 @@
 ---
 type: "OWOX Data Mart"
 title: "🥈 Products (E-Commerce)"
-description: "This Data Mart provides a comprehensive catalog of e-commerce products, including pricing, cost structures, and website categorization. It is primarily used for analyzing product margins and managi..."
-resource: "https://app.owox.com/api/external/http-data/data-marts/f6b33805-84ed-4469-9f7d-438e99c48696.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-19T07:00:17.000Z
+description: "This Data Mart provides a comprehensive catalog of e-commerce products, including pricing, cost structures, and website categorization. It is primarily used for analyzing product margins and managing web content mapping."
+tags: ["owox"]
+timestamp: 2026-07-23T07:00:34.000Z
 ---
-
-# 🥈 Products (E-Commerce)
-
-This Data Mart provides a comprehensive catalog of e-commerce products, including pricing, cost structures, and website categorization. It is primarily used for analyzing product margins and managing web content mapping.
-
-## Overview
-
-- **ID:** `f6b33805-84ed-4469-9f7d-438e99c48696`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/f6b33805-84ed-4469-9f7d-438e99c48696.ndjson`
 
 # Schema
 
