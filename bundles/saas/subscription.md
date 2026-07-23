@@ -1,23 +1,31 @@
 ---
 type: "OWOX Data Mart"
 title: "Subscription"
-description: "One row per subscription, current state. Links an account to its plan; carries MRR, seats and billing dates."
-resource: "https://app.owox.com/api/external/http-data/data-marts/f24a8aba-2075-4039-a300-6dc31d713b85.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-21T13:36:31.000Z
+description: |
+  The billing spine: one row per subscription showing which account is on which plan, at what
+  monthly recurring revenue and seat count, on what cadence, and with any negotiated discount.
+  It also reveals where a subscription's plan has drifted from the account's current tier under
+  grandfathered or discounted pricing. The source of truth for what each customer pays today.
+
+  **Example questions this mart can answer:**
+  - What is total recurring revenue, and how is it spread across tiers, billing intervals and seat counts?
+  - How common are negotiated discounts, and how much list price do they give away?
+  - Which accounts sit on grandfathered pricing that no longer matches their current tier?
+tags: ["owox"]
+timestamp: 2026-07-23T12:51:26.000Z
 ---
 
 # Subscription
 
-One row per subscription, current state. Links an account to its plan; carries MRR, seats and billing dates.
+The billing spine: one row per subscription showing which account is on which plan, at what
+monthly recurring revenue and seat count, on what cadence, and with any negotiated discount.
+It also reveals where a subscription's plan has drifted from the account's current tier under
+grandfathered or discounted pricing. The source of truth for what each customer pays today.
 
-## Overview
-
-- **ID:** `f24a8aba-2075-4039-a300-6dc31d713b85`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [SaaS] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/f24a8aba-2075-4039-a300-6dc31d713b85.ndjson`
+**Example questions this mart can answer:**
+- What is total recurring revenue, and how is it spread across tiers, billing intervals and seat counts?
+- How common are negotiated discounts, and how much list price do they give away?
+- Which accounts sit on grandfathered pricing that no longer matches their current tier?
 
 # Schema
 

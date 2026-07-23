@@ -1,23 +1,29 @@
 ---
 type: "OWOX Data Mart"
 title: "Marketing Spend"
-description: "One row per channel × campaign × day of spend. CAC and payback attributed at the acquisition-channel cohort level, not per account."
-resource: "https://app.owox.com/api/external/http-data/data-marts/2853de85-d7f7-4d12-94b7-484f06747296.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-21T13:25:00.000Z
+description: |
+  Marketing investment by channel, campaign and day — cost, leads, and signups — attributed to
+  the cohort of accounts each channel brings in rather than to individual accounts. The numerator
+  and denominator of customer acquisition cost, and the starting point for payback analysis.
+
+  **Example questions this mart can answer:**
+  - What is blended and per-channel acquisition cost, and which channels turn leads into signups most efficiently?
+  - Which channels pay back fastest once their spend is set against the revenue their cohort retains?
+  - How has cost per signup shifted over time as spend scaled up or down?
+tags: ["owox"]
+timestamp: 2026-07-23T12:51:25.000Z
 ---
 
 # Marketing Spend
 
-One row per channel × campaign × day of spend. CAC and payback attributed at the acquisition-channel cohort level, not per account.
+Marketing investment by channel, campaign and day — cost, leads, and signups — attributed to
+the cohort of accounts each channel brings in rather than to individual accounts. The numerator
+and denominator of customer acquisition cost, and the starting point for payback analysis.
 
-## Overview
-
-- **ID:** `2853de85-d7f7-4d12-94b7-484f06747296`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [SaaS] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/2853de85-d7f7-4d12-94b7-484f06747296.ndjson`
+**Example questions this mart can answer:**
+- What is blended and per-channel acquisition cost, and which channels turn leads into signups most efficiently?
+- Which channels pay back fastest once their spend is set against the revenue their cohort retains?
+- How has cost per signup shifted over time as spend scaled up or down?
 
 # Schema
 

@@ -1,23 +1,29 @@
 ---
 type: "OWOX Data Mart"
 title: "User"
-description: "One row per user seat within an account."
-resource: "https://app.owox.com/api/external/http-data/data-marts/6c047c34-a01d-44b8-b294-1340685392e3.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-20T16:43:08.000Z
+description: |
+  The people inside each account: one row per user seat, with role, seat type, when they were
+  invited, and how recently they were active. Seat-level activity is what turns a licensed
+  account into an adopted one — and idle seats are early signs of shrinking value.
+
+  **Example questions this mart can answer:**
+  - What share of licensed seats is actually active, and how does seat adoption vary by account?
+  - Which roles and seat types are the most engaged?
+  - Are accounts with many dormant seats the ones heading toward contraction?
+tags: ["owox"]
+timestamp: 2026-07-23T12:51:27.000Z
 ---
 
 # User
 
-One row per user seat within an account.
+The people inside each account: one row per user seat, with role, seat type, when they were
+invited, and how recently they were active. Seat-level activity is what turns a licensed
+account into an adopted one — and idle seats are early signs of shrinking value.
 
-## Overview
-
-- **ID:** `6c047c34-a01d-44b8-b294-1340685392e3`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [SaaS] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/6c047c34-a01d-44b8-b294-1340685392e3.ndjson`
+**Example questions this mart can answer:**
+- What share of licensed seats is actually active, and how does seat adoption vary by account?
+- Which roles and seat types are the most engaged?
+- Are accounts with many dormant seats the ones heading toward contraction?
 
 # Schema
 

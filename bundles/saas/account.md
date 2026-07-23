@@ -1,23 +1,33 @@
 ---
 type: "OWOX Data Mart"
 title: "Account"
-description: "One row per customer account (company). Firmographics, plan tier and health."
-resource: "https://app.owox.com/api/external/http-data/data-marts/d9c55dd4-84b1-474a-9262-038ec0fa1f30.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-20T16:43:05.000Z
+description: |
+  Every customer account (a company), with the signals that frame the whole relationship:
+  industry, size and region, the plan tier they are on, a revenue size band, the channel
+  that acquired them, their success-manager owner, a product-health score, and where they
+  sit in the lifecycle (trial, active, at-risk, churned). The dimension you slice the entire
+  business by.
+
+  **Example questions this mart can answer:**
+  - Which industries and company sizes carry the healthiest accounts and the highest revenue bands?
+  - How does the mix of at-risk versus healthy accounts differ across acquisition channels?
+  - Do accounts with a dedicated success manager show better health and lifecycle outcomes?
+tags: ["owox"]
+timestamp: 2026-07-23T12:51:25.000Z
 ---
 
 # Account
 
-One row per customer account (company). Firmographics, plan tier and health.
+Every customer account (a company), with the signals that frame the whole relationship:
+industry, size and region, the plan tier they are on, a revenue size band, the channel
+that acquired them, their success-manager owner, a product-health score, and where they
+sit in the lifecycle (trial, active, at-risk, churned). The dimension you slice the entire
+business by.
 
-## Overview
-
-- **ID:** `d9c55dd4-84b1-474a-9262-038ec0fa1f30`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [SaaS] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/d9c55dd4-84b1-474a-9262-038ec0fa1f30.ndjson`
+**Example questions this mart can answer:**
+- Which industries and company sizes carry the healthiest accounts and the highest revenue bands?
+- How does the mix of at-risk versus healthy accounts differ across acquisition channels?
+- Do accounts with a dedicated success manager show better health and lifecycle outcomes?
 
 # Schema
 

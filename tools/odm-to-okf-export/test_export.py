@@ -324,5 +324,102 @@ class BuildVizDataTests(unittest.TestCase):
         self.assertEqual(by_id["saas/no_frontmatter"]["label"], "no_frontmatter")
 
 
+class UniversalOkfFormatTests(unittest.TestCase):
+    def test_render_frontmatter_block_scalar_roundtrips(self):
+        import yaml  # test-only; exporter runtime stays stdlib
+        from export import render_frontmatter
+        desc = "Para line one.\nPara line two.\n\n**Example questions this mart can answer:**\n- Q1?\n- Q2?"
+        fm = render_frontmatter({"type": "OWOX Data Mart", "title": "Customer", "description": desc,
+                                 "tags": ["owox"]})
+        self.assertIn("description: |", fm)
+        parsed = yaml.safe_load(fm.replace("---\n", "", 1).rsplit("\n---", 1)[0])
+        self.assertTrue(parsed["description"].startswith("Para line one."))
+        self.assertIn("Example questions", parsed["description"])
+        self.assertEqual(parsed["tags"], ["owox"])
+
+    def test_data_mart_doc_universal_shape(self):
+        from export import render_data_mart_doc
+        mart = {"id": "M1", "title": "Customer", "description": "Full desc line one.\n\nMore.",
+                "definitionType": "VIEW", "status": "PUBLISHED",
+                "storage": {"type": "GOOGLE_BIGQUERY", "title": "BigQuery"},
+                "schema": {"fields": [{"name": "customer_id", "type": "STRING", "isPrimaryKey": True,
+                                       "description": "PK."}]}}
+        doc = render_data_mart_doc(mart, "https://app.owox.com", None)
+        self.assertNotIn("resource:", doc)
+        self.assertIn('tags: ["owox"]', doc)
+        self.assertNotIn("## Overview", doc)
+        self.assertNotIn("Data endpoint", doc)
+        self.assertNotIn("Status:", doc)
+        self.assertIn("description: |", doc)  # full desc as block scalar
+        self.assertIn("Full desc line one.", doc)
+
+    def test_index_table_single_column(self):
+        from export import write_bundle
+        import tempfile as _tempfile
+        with _tempfile.TemporaryDirectory() as d:
+            marts = [({"id": "M1", "title": "Customer", "definitionType": "VIEW",
+                       "storage": {"type": "GOOGLE_BIGQUERY"}}, "# Customer\n")]
+            write_bundle(d, marts, "finance", "Finance")
+            idx = open(os.path.join(d, "finance", "index.md"), encoding="utf-8").read()
+        self.assertIn("| Data Mart |", idx)
+        self.assertNotIn("Type", idx)
+        self.assertNotIn("Storage", idx)
+        self.assertNotIn("GOOGLE_BIGQUERY", idx)
+        self.assertIn("[Customer](./customer.md)", idx)
+
+    def test_render_frontmatter_block_scalar_leading_space_is_safe(self):
+        import yaml
+        from export import render_frontmatter
+        fm = render_frontmatter({"type": "OWOX Data Mart", "title": "X",
+                                 "description": " Leading space first line.\nSecond line.", "tags": ["owox"]})
+        parsed = yaml.safe_load(fm.replace("---\n", "", 1).rsplit("\n---", 1)[0])
+        self.assertIn("Leading space first line.", parsed["description"])
+        self.assertIn("Second line.", parsed["description"])
+
+    def test_index_uses_project_description(self):
+        from export import write_bundle
+        import tempfile, os
+        with tempfile.TemporaryDirectory() as d:
+            marts = [({"id": "M1", "title": "Customer"}, "# Customer\n")]
+            write_bundle(d, marts, "finance", "Finance",
+                         project_description="A lending business.\n\n**Example questions this model can answer:**\n- Q?")
+            idx = open(os.path.join(d, "finance", "index.md"), encoding="utf-8").read()
+        self.assertIn("description: |", idx)
+        self.assertIn("A lending business.", idx)
+        self.assertNotIn("Index of exported OWOX data marts.", idx)
+
+
+def test_read_preserved_regions_captures_after_block():
+    from export import read_preserved_regions, GEN_START, GEN_END
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, "index.md")
+        open(p, "w", encoding="utf-8").write(
+            f"---\ntype: index\n---\n\n{GEN_START}\n# Finance\n{GEN_END}\n\n## Diagram\n![ERD](./erd.png)\n")
+        before, after = read_preserved_regions(p)
+    assert before == ""
+    assert "## Diagram" in after and "![ERD](./erd.png)" in after
+
+def test_read_preserved_regions_none_without_sentinels():
+    from export import read_preserved_regions
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, "index.md")
+        open(p, "w", encoding="utf-8").write("---\ntype: index\n---\n\n# Finance\n\n![ERD](./erd.png)\n")
+        assert read_preserved_regions(p) == ("", "")
+
+def test_write_bundle_preserves_manual_tail():
+    from export import write_bundle, GEN_START, GEN_END
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        marts = [({"id": "M1", "title": "Customer"}, "# Customer\n")]
+        write_bundle(d, marts, "finance", "Finance",
+                     preserved_regions=("", "## Diagram\n![ERD](./erd.png)"))
+        idx = open(os.path.join(d, "finance", "index.md"), encoding="utf-8").read()
+    assert GEN_START in idx and GEN_END in idx
+    assert idx.index(GEN_END) < idx.index("## Diagram")   # manual tail after the block
+    assert "![ERD](./erd.png)" in idx
+
+
 if __name__ == "__main__":
     unittest.main()

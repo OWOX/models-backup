@@ -146,6 +146,11 @@ def list_data_storages(api_origin, headers):
     return data.get("items", data) if isinstance(data, dict) else (data or [])
 
 
+def get_project_settings(api_origin, headers):
+    """Project-level settings, including the human/AI description shown on the index."""
+    return _http_json("GET", f"{api_origin}/api/projects/settings", headers=headers) or {}
+
+
 def filter_marts_by_storage(marts, storages, storage_id):
     """Keep only marts sitting on `storage_id`.
 
@@ -267,6 +272,11 @@ def render_frontmatter(fields):
             continue
         if isinstance(val, (list, tuple)):
             lines.append(f"{key}: {yaml_list(val)}")
+        elif isinstance(val, str) and "\n" in val and not isinstance(val, _Raw):
+            block = val.strip()  # leading/trailing WS would break block-scalar indentation
+            lines.append(f"{key}: |")
+            for ln in block.split("\n"):
+                lines.append(f"  {ln}" if ln.strip() else "")
         else:
             lines.append(f"{key}: {yaml_scalar(val)}")
     lines.append("---")
@@ -324,32 +334,16 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
     mart_id = mart.get("id", "")
     title = mart.get("title") or mart_id
     description = mart.get("description") or ""
-    definition_type = mart.get("definitionType") or ""
-    status = mart.get("status") or ""
-    storage = mart.get("storage") or {}
-    storage_type = storage.get("type") or ""
-    storage_title = storage.get("title") or ""
     modified = _Raw(mart.get("modifiedAt") or now_iso())
     data_url = f"{api_origin}{DATA_NDJSON_PATH.format(id=mart_id)}"
 
     tags = ["owox"]
-    if storage_type:
-        tags.append(storage_type.lower())
-    if definition_type:
-        tags.append(definition_type.lower())
-    if mart.get("connectorSourceName"):
-        tags.append(slugify(mart["connectorSourceName"], "connector"))
 
-    short_desc = (description.strip().splitlines()[0] if description.strip()
-                  else f"OWOX data mart '{title}'.")
-    if len(short_desc) > 200:
-        short_desc = short_desc[:197] + "..."
-
+    full_desc = description.strip() or f"OWOX data mart '{title}'."
     frontmatter = render_frontmatter({
         "type": "OWOX Data Mart",
         "title": title,
-        "description": short_desc,
-        "resource": data_url,
+        "description": full_desc,
         "tags": tags,
         "timestamp": modified,
     })
@@ -357,16 +351,6 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
     body = [f"# {title}", ""]
     if description.strip():
         body += [description.strip(), ""]
-    body += [
-        "## Overview",
-        "",
-        f"- **ID:** `{mart_id}`",
-        f"- **Status:** {status}",
-        f"- **Definition type:** {definition_type}",
-        f"- **Storage:** {storage_title} ({storage_type})".replace(" ()", ""),
-        f"- **Data endpoint:** `GET {data_url}`",
-        "",
-    ]
 
     schema_section = render_schema_section(mart.get("schema"), fk=fk)
     if schema_section:
@@ -377,7 +361,7 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
         body += [
             f"## Sample (first {len(sample_rows)} rows)",
             "",
-            "> Preview only — the full dataset lives at the data endpoint above.",
+            f"> Preview only — the full dataset is available at `{data_url}`.",
             "",
             "```json",
             preview,
@@ -473,6 +457,7 @@ def _render_joins_section(mart, path_lookup, join_index=None):
 def read_frontmatter(path):
     """Parse the leading --- block of an OKF markdown file into a flat dict of strings."""
     fields = {}
+    in_block = False
     with open(path, encoding="utf-8") as fh:
         if fh.readline().strip() != "---":
             return fields
@@ -480,11 +465,42 @@ def read_frontmatter(path):
             line = line.rstrip("\n")
             if line.strip() == "---":
                 break
+            if in_block:
+                if line.startswith(" ") or not line.strip():
+                    continue  # indented (or blank) block-scalar continuation line
+                in_block = False
             key, sep, value = line.partition(":")
             if not sep:
                 continue
-            fields[key.strip()] = value.strip().strip('"')
+            value = value.strip()
+            if value == "|":
+                in_block = True
+                continue
+            fields[key.strip()] = value.strip('"')
     return fields
+
+
+GEN_START = "<!-- OWOX:GENERATED:START — regenerated on export, do not edit inside this block -->"
+GEN_END = "<!-- OWOX:GENERATED:END -->"
+
+
+def read_preserved_regions(index_path):
+    """(before, after) manual text around the generated sentinel block in an existing
+    index.md; ("", "") if the file or the sentinels are absent. Frontmatter is dropped
+    (it is always regenerated)."""
+    if not os.path.isfile(index_path):
+        return "", ""
+    with open(index_path, encoding="utf-8") as fh:
+        text = fh.read()
+    body = text
+    if text.startswith("---"):
+        m = re.search(r"\n---\s*\n", text)
+        if m:
+            body = text[m.end():]
+    si, ei = body.find(GEN_START), body.find(GEN_END)
+    if si == -1 or ei == -1 or ei < si:
+        return "", ""
+    return body[:si].strip("\n"), body[ei + len(GEN_END):].strip("\n")
 
 
 def collect_bundles(out_dir):
@@ -503,10 +519,12 @@ def collect_bundles(out_dir):
 
 
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
-                 join_indexes=None):
+                 join_indexes=None, project_description=None, preserved_regions=("", "")):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
     project_folder: slugified OWOX project name used as the subfolder name.
-    join_indexes: {mart_id: build_join_index(...)} for real join keys."""
+    join_indexes: {mart_id: build_join_index(...)} for real join keys.
+    preserved_regions: (before, after) manual text to keep around the regenerated
+    index body across re-export, from read_preserved_regions()."""
     marts_dir = os.path.join(out_dir, project_folder)
     os.makedirs(marts_dir, exist_ok=True)
     ts = _Raw(now_iso())
@@ -531,15 +549,21 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
         return text.replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
 
     # <project_folder>/index.md
+    before, after = preserved_regions
     di = [render_frontmatter({
         "type": "index", "title": project_title,
-        "description": "Index of exported OWOX data marts.",
+        "description": (project_description.strip() if project_description and project_description.strip()
+                        else "Index of exported OWOX data marts."),
         "tags": ["owox", "index"], "timestamp": ts,
-    }), "", f"# {project_title}", "", "| Data Mart | Type | Storage |",
-        "|-----------|------|---------|"]
+    }), ""]
+    if before:
+        di += [before, ""]
+    di += [GEN_START, "", f"# {project_title}", "", "| Data Mart |", "|-----------|"]
     for title, fname, dtype, stype in sorted(index_rows):
-        safe_title = _safe_cell(title)
-        di.append(f"| [{safe_title}](./{fname}) | {_safe_cell(dtype)} | {_safe_cell(stype)} |")
+        di.append(f"| [{_safe_cell(title)}](./{fname}) |")
+    di += [GEN_END]
+    if after:
+        di += ["", after]
     with open(os.path.join(marts_dir, "index.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(di) + "\n")
 
@@ -1103,6 +1127,7 @@ def main():
     api_origin, api_key_id, api_key_secret = parse_api_key(args.api_key)
     token = exchange_for_token(api_origin, api_key_id, api_key_secret)
     headers = auth_headers(token, api_key_id)
+    project_description = (get_project_settings(api_origin, headers) or {}).get("description")
     project_title = project_title_from_token(token)
     display_title = args.title or project_title or "Data Marts"
     project_folder = slugify(args.folder, "data-marts") if args.folder else slugify(project_title, "data-marts")
@@ -1156,10 +1181,12 @@ def main():
 
     # Only this bundle's folder is rewritten — sibling bundles in the gallery stay put.
     bundle_dir = os.path.join(args.out, project_folder)
+    preserved_regions = read_preserved_regions(os.path.join(bundle_dir, "index.md"))
     if os.path.isdir(bundle_dir):
         shutil.rmtree(bundle_dir)
     count = write_bundle(args.out, marts_with_docs, project_folder, display_title,
-                         join_indexes=join_indexes)
+                         join_indexes=join_indexes, project_description=project_description,
+                         preserved_regions=preserved_regions)
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
     if args.viz:

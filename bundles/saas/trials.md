@@ -1,23 +1,29 @@
 ---
 type: "OWOX Data Mart"
 title: "Trials"
-description: "One row per trial. Trial-to-paid conversion without discounting."
-resource: "https://app.owox.com/api/external/http-data/data-marts/fd4b3c2b-1c54-4fb4-9f8e-22d89122dc34.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-20T16:43:08.000Z
+description: |
+  Every trial and how it ended — converted to paid or not — with when it started and expired,
+  where it came from (self-serve, sales-assisted, product-led upsell), and the plan it was
+  evaluating. The top of the funnel for new recurring revenue.
+
+  **Example questions this mart can answer:**
+  - What is the trial-to-paid conversion rate, and how does it differ by trial source?
+  - How long do trials take to convert, and does evaluating a higher tier change the odds?
+  - Which trial sources bring in the accounts that go on to be worth the most?
+tags: ["owox"]
+timestamp: 2026-07-23T12:51:27.000Z
 ---
 
 # Trials
 
-One row per trial. Trial-to-paid conversion without discounting.
+Every trial and how it ended — converted to paid or not — with when it started and expired,
+where it came from (self-serve, sales-assisted, product-led upsell), and the plan it was
+evaluating. The top of the funnel for new recurring revenue.
 
-## Overview
-
-- **ID:** `fd4b3c2b-1c54-4fb4-9f8e-22d89122dc34`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [SaaS] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/fd4b3c2b-1c54-4fb4-9f8e-22d89122dc34.ndjson`
+**Example questions this mart can answer:**
+- What is the trial-to-paid conversion rate, and how does it differ by trial source?
+- How long do trials take to convert, and does evaluating a higher tier change the odds?
+- Which trial sources bring in the accounts that go on to be worth the most?
 
 # Schema
 
