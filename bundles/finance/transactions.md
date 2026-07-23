@@ -1,24 +1,15 @@
 ---
 type: "OWOX Data Mart"
 title: "Transactions"
-description: "Every payment, withdrawal, transfer, and card authorization flowing through customer accounts — the day-to-day activity that shows how engaged customers are and where fraud shows up."
+description: |
+  Every payment, withdrawal, transfer, and card authorization flowing through customer
+  accounts — the day-to-day activity that shows how engaged customers are and where fraud
+  shows up. Each record carries the amount, merchant category, channel, whether it was
+  declined, and the fraud assessment made at the time of authorization. The pulse of
+  everyday customer behavior.
 tags: ["owox"]
 timestamp: 2026-07-23T12:02:49.000Z
 ---
-
-# Transactions
-
-Every payment, withdrawal, transfer, and card authorization flowing through customer
-accounts — the day-to-day activity that shows how engaged customers are and where fraud
-shows up. Each record carries the amount, merchant category, channel, whether it was
-declined, and the fraud assessment made at the time of authorization. The pulse of
-everyday customer behavior.
-
-# Examples
-
-- Where does the fraud-detection system catch real fraud versus wrongly declining good customers?
-- Which spending categories and channels drive the most transaction volume and value?
-- How does everyday account activity differ between engaged customers and those going dormant?
 
 # Schema
 
@@ -35,6 +26,12 @@ everyday customer behavior.
 | `fraud_score` | FLOAT | Model score at authorization (0–1). |
 | `is_confirmed_fraud` | BOOLEAN | Post-investigation label. Steeply correlated with high `fraud_score`; overall a low-basis-points share of volume. Together with `fraud_score` gives capture rate vs false-positive declines. |
 | `channel` | STRING | One of `card_present` / `ecommerce` / `atm` / `online_banking` / `mobile`. |
+
+# Example Questions
+
+- Where does the fraud-detection system catch real fraud versus wrongly declining good customers?
+- Which spending categories and channels drive the most transaction volume and value?
+- How does everyday account activity differ between engaged customers and those going dormant?
 
 ## Joins
 

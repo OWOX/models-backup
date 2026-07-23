@@ -2,22 +2,9 @@
 type: "OWOX Data Mart"
 title: "Linkedin Ads Performance Insights"
 description: "Linkedin Ads Performance Insights with ad-level granularity."
-resource: "https://app.owox.com/api/external/http-data/data-marts/330c308c-157e-46eb-8ba9-2d741fc9f89b.ndjson"
-tags: ["owox", "google_bigquery", "connector"]
+tags: ["owox"]
 timestamp: 2026-05-26T20:08:10.000Z
 ---
-
-# Linkedin Ads Performance Insights
-
-Linkedin Ads Performance Insights with ad-level granularity.
-
-## Overview
-
-- **ID:** `330c308c-157e-46eb-8ba9-2d741fc9f89b`
-- **Status:** PUBLISHED
-- **Definition type:** CONNECTOR
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/330c308c-157e-46eb-8ba9-2d741fc9f89b.ndjson`
 
 # Schema
 

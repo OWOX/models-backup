@@ -2,20 +2,9 @@
 type: "OWOX Data Mart"
 title: "Shopify Orders 2026"
 description: "OWOX data mart 'Shopify Orders 2026'."
-resource: "https://app.owox.com/api/external/http-data/data-marts/48537173-e031-4349-b42c-696a1dcd72e2.ndjson"
-tags: ["owox", "google_bigquery", "connector"]
-timestamp: 2026-07-20T10:01:07.000Z
+tags: ["owox"]
+timestamp: 2026-07-23T13:01:09.000Z
 ---
-
-# Shopify Orders 2026
-
-## Overview
-
-- **ID:** `48537173-e031-4349-b42c-696a1dcd72e2`
-- **Status:** PUBLISHED
-- **Definition type:** CONNECTOR
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/48537173-e031-4349-b42c-696a1dcd72e2.ndjson`
 
 # Schema
 

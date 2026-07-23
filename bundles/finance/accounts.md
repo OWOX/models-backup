@@ -1,23 +1,14 @@
 ---
 type: "OWOX Data Mart"
 title: "Accounts"
-description: "Every product a customer has opened — the funded relationships that turn a sign-up into an active customer."
+description: |
+  Every product a customer has opened — the funded relationships that turn a sign-up into
+  an active customer. Tracks how each holding was activated, its current balance, and
+  whether it is still active, dormant, frozen, closed, or written off. This is where you see
+  who actually became a funded customer and how healthy those relationships are.
 tags: ["owox"]
 timestamp: 2026-07-23T12:02:48.000Z
 ---
-
-# Accounts
-
-Every product a customer has opened — the funded relationships that turn a sign-up into
-an active customer. Tracks how each holding was activated, its current balance, and
-whether it is still active, dormant, frozen, closed, or written off. This is where you see
-who actually became a funded customer and how healthy those relationships are.
-
-# Examples
-
-- What share of opened accounts ever get activated, and how long does activation typically take?
-- How are balances distributed across active versus dormant relationships?
-- Which product types have the highest rate of accounts going dormant or being closed?
 
 # Schema
 
@@ -31,6 +22,12 @@ who actually became a funded customer and how healthy those relationships are.
 | `current_balance` | NUMERIC | Current account balance. |
 | `activated_at` | DATE | First funding / first card use; `≥ opened_at`; null if never activated. |
 | `is_active` | BOOLEAN | Pure derivation: `is_active = (status = 'active')`. Not drawn independently. |
+
+# Example Questions
+
+- What share of opened accounts ever get activated, and how long does activation typically take?
+- How are balances distributed across active versus dormant relationships?
+- Which product types have the highest rate of accounts going dormant or being closed?
 
 ## Joins
 

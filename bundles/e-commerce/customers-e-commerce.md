@@ -1,23 +1,10 @@
 ---
 type: "OWOX Data Mart"
 title: "🥈 Customers (E-Commerce)"
-description: "This Data Mart provides a comprehensive profile of registered e-commerce customers, including their segmentation, registration dates, and geographical locations. It is primarily used for analyzing ..."
-resource: "https://app.owox.com/api/external/http-data/data-marts/f5035458-0b6e-443a-afdd-c05d03095292.ndjson"
-tags: ["owox", "google_bigquery", "view"]
+description: "This Data Mart provides a comprehensive profile of registered e-commerce customers, including their segmentation, registration dates, and geographical locations. It is primarily used for analyzing customer acquisition trends and performing user-base segmentation for targeted marketing."
+tags: ["owox"]
 timestamp: 2026-07-16T01:07:29.000Z
 ---
-
-# 🥈 Customers (E-Commerce)
-
-This Data Mart provides a comprehensive profile of registered e-commerce customers, including their segmentation, registration dates, and geographical locations. It is primarily used for analyzing customer acquisition trends and performing user-base segmentation for targeted marketing.
-
-## Overview
-
-- **ID:** `f5035458-0b6e-443a-afdd-c05d03095292`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/f5035458-0b6e-443a-afdd-c05d03095292.ndjson`
 
 # Schema
 

@@ -2,20 +2,9 @@
 type: "OWOX Data Mart"
 title: "🥉Reddit Ads | Insights"
 description: "OWOX data mart '🥉Reddit Ads | Insights'."
-resource: "https://app.owox.com/api/external/http-data/data-marts/fddd81d3-c862-44a7-b0b4-fe3df28020e9.ndjson"
-tags: ["owox", "google_bigquery", "connector"]
+tags: ["owox"]
 timestamp: 2026-05-19T15:45:40.000Z
 ---
-
-# 🥉Reddit Ads | Insights
-
-## Overview
-
-- **ID:** `fddd81d3-c862-44a7-b0b4-fe3df28020e9`
-- **Status:** PUBLISHED
-- **Definition type:** CONNECTOR
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/fddd81d3-c862-44a7-b0b4-fe3df28020e9.ndjson`
 
 # Schema
 

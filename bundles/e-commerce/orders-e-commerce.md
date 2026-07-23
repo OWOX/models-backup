@@ -1,23 +1,10 @@
 ---
 type: "OWOX Data Mart"
 title: "🥈 Orders (E-Commerce)"
-description: "This data mart contains transaction-level records for all completed and in-progress orders, enabling analysis of customer purchasing behavior, order timelines, and fulfillment status. Each row repr..."
-resource: "https://app.owox.com/api/external/http-data/data-marts/d565c4cb-5f68-480e-917d-c1709b59ae02.ndjson"
-tags: ["owox", "google_bigquery", "view"]
-timestamp: 2026-07-20T07:01:01.000Z
+description: "This data mart contains transaction-level records for all completed and in-progress orders, enabling analysis of customer purchasing behavior, order timelines, and fulfillment status. Each row represents a single order, linked to both a customer and a session, allowing you to track conversions and attribute purchases to user activity"
+tags: ["owox"]
+timestamp: 2026-07-23T07:01:13.000Z
 ---
-
-# 🥈 Orders (E-Commerce)
-
-This data mart contains transaction-level records for all completed and in-progress orders, enabling analysis of customer purchasing behavior, order timelines, and fulfillment status. Each row represents a single order, linked to both a customer and a session, allowing you to track conversions and attribute purchases to user activity
-
-## Overview
-
-- **ID:** `d565c4cb-5f68-480e-917d-c1709b59ae02`
-- **Status:** PUBLISHED
-- **Definition type:** VIEW
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/d565c4cb-5f68-480e-917d-c1709b59ae02.ndjson`
 
 # Schema
 

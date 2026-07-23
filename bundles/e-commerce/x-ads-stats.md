@@ -2,20 +2,9 @@
 type: "OWOX Data Mart"
 title: "X Ads Stats"
 description: "OWOX data mart 'X Ads Stats'."
-resource: "https://app.owox.com/api/external/http-data/data-marts/bb3c6227-3642-4cad-9195-201c795c4f86.ndjson"
-tags: ["owox", "google_bigquery", "connector"]
+tags: ["owox"]
 timestamp: 2026-04-20T15:49:56.000Z
 ---
-
-# X Ads Stats
-
-## Overview
-
-- **ID:** `bb3c6227-3642-4cad-9195-201c795c4f86`
-- **Status:** PUBLISHED
-- **Definition type:** CONNECTOR
-- **Storage:** BigQuery [Common] (GOOGLE_BIGQUERY)
-- **Data endpoint:** `GET https://app.owox.com/api/external/http-data/data-marts/bb3c6227-3642-4cad-9195-201c795c4f86.ndjson`
 
 # Schema
 
