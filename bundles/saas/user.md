@@ -9,14 +9,6 @@ tags: ["owox"]
 timestamp: 2026-07-23T12:51:27.000Z
 ---
 
-# User
-
-# Example Questions
-
-- What share of licensed seats is actually active, and how does seat adoption vary by account?
-- Which roles and seat types are the most engaged?
-- Are accounts with many dormant seats the ones heading toward contraction?
-
 # Schema
 
 | Column | Type | Description |
@@ -29,6 +21,12 @@ timestamp: 2026-07-23T12:51:27.000Z
 | `invited_at` | TIMESTAMP | When the user was invited. |
 | `last_active_at` | TIMESTAMP | Most recent activity timestamp. |
 | `is_active` | BOOLEAN | Whether the seat is currently active. |
+
+# Example Questions
+
+- What share of licensed seats is actually active, and how does seat adoption vary by account?
+- Which roles and seat types are the most engaged?
+- Are accounts with many dormant seats the ones heading toward contraction?
 
 ## Joins
 

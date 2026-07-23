@@ -10,14 +10,6 @@ tags: ["owox"]
 timestamp: 2026-07-23T12:51:26.000Z
 ---
 
-# Subscription
-
-# Example Questions
-
-- What is total recurring revenue, and how is it spread across tiers, billing intervals and seat counts?
-- How common are negotiated discounts, and how much list price do they give away?
-- Which accounts sit on grandfathered pricing that no longer matches their current tier?
-
 # Schema
 
 | Column | Type | Description |
@@ -35,6 +27,12 @@ timestamp: 2026-07-23T12:51:26.000Z
 | `current_period_end` | DATE | End of the current billing period. |
 | `canceled_at` | DATE | Date the subscription was canceled, if it was. |
 | `discount_pct` | NUMERIC | Negotiated discount fraction applied to list price, if any. |
+
+# Example Questions
+
+- What is total recurring revenue, and how is it spread across tiers, billing intervals and seat counts?
+- How common are negotiated discounts, and how much list price do they give away?
+- Which accounts sit on grandfathered pricing that no longer matches their current tier?
 
 ## Joins
 
