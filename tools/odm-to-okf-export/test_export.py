@@ -482,5 +482,67 @@ def test_index_fields_column_and_example_questions():
     assert "A SaaS business." not in body   # description not duplicated in the body
 
 
+def _frontmatter_keys(fm_text):
+    """Ordered top-level frontmatter keys (ignoring indented block-scalar/list body)."""
+    keys = []
+    for line in fm_text.splitlines():
+        if line and not line[0].isspace():
+            key = line.split(":", 1)[0].strip()
+            if key:
+                keys.append(key)
+    return keys
+
+
+def test_data_mart_frontmatter_type_sits_between_tags_and_timestamp():
+    from export import render_data_mart_doc
+    mart = {"id": "M1", "title": "Customer", "description": "One sentence.",
+            "schema": {"fields": [{"name": "customer_id", "type": "STRING", "isPrimaryKey": True}]}}
+    doc = render_data_mart_doc(mart, "https://app.owox.com", None)
+    fm = doc.split("---", 2)[1]
+    keys = _frontmatter_keys(fm)
+    assert keys.index("tags") < keys.index("type") < keys.index("timestamp")
+    assert keys.index("title") < keys.index("type")   # type is no longer first
+
+
+def test_index_authors_are_a_clickable_body_line_under_the_table():
+    from export import write_bundle
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        marts = [({"id": "M1", "title": "Customer", "schema": {"fields": [{"name": "a"}]}}, "# Customer\n")]
+        write_bundle(d, marts, "finance", "Finance", project_description="A lending business.")
+        idx = open(os.path.join(d, "finance", "index.md"), encoding="utf-8").read()
+    fm = idx.split("---", 2)[1]
+    body = idx.split("---", 2)[2]
+    # authors are NOT in the frontmatter (GitHub renders those as plain text, not links)
+    assert "authors" not in _frontmatter_keys(fm)
+    assert _frontmatter_keys(fm).index("tags") < _frontmatter_keys(fm).index("type") \
+        < _frontmatter_keys(fm).index("timestamp")
+    # authors are a clickable markdown line in the body, between the frontmatter table
+    # and the Data Mart table
+    assert "**Authors:** [Vlad Flaks](https://github.com/vladflaks)" in body
+    assert "[Rus Obolonsky](https://github.com/Obolrus)" in body
+    assert body.index("**Authors:**") < body.index("| Data Mart | Fields |")
+
+
+def test_index_canvas_cta_rendered_only_with_bundle_url():
+    from export import write_bundle, CANVAS_MODEL_URL_PREFIX
+    import tempfile, os
+    url = "https://github.com/OWOX/models/tree/main/bundles/finance"
+    with tempfile.TemporaryDirectory() as d:
+        marts = [({"id": "M1", "title": "Customer", "schema": {"fields": [{"name": "a"}]}}, "# Customer\n")]
+        write_bundle(d, marts, "finance", "Finance",
+                     project_description="A lending business.\n\n"
+                     "**Example questions this model can answer:**\n- Q1?",
+                     bundle_url=url)
+        with_cta = open(os.path.join(d, "finance", "index.md"), encoding="utf-8").read()
+        write_bundle(d, marts, "nocta", "NoCTA", project_description="A lending business.")
+        without_cta = open(os.path.join(d, "nocta", "index.md"), encoding="utf-8").read()
+    assert "Explore on canvas" in with_cta
+    assert f"{CANVAS_MODEL_URL_PREFIX}{url}" in with_cta
+    # CTA comes after the example questions
+    assert with_cta.index("# Example Questions") < with_cta.index("# Explore this model")
+    assert "Explore on canvas" not in without_cta
+
+
 if __name__ == "__main__":
     unittest.main()

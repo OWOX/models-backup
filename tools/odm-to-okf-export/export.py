@@ -44,6 +44,19 @@ EXCHANGE_PATH = "/api/auth/api-keys/exchange"
 DATA_MART_GET_PATH = "/api/data-marts/{id}"
 DATA_NDJSON_PATH = "/api/external/http-data/data-marts/{id}.ndjson"
 
+# Model authorship, hardcoded until per-model authors are wired through the pipeline.
+# Rendered as a clickable line in the model index BODY (under the Data Mart table), not in
+# frontmatter: GitHub shows frontmatter values as plain text, so markdown links only become
+# clickable in the body. Each entry is a markdown link.
+MODEL_AUTHORS = [
+    "[Vlad Flaks](https://github.com/vladflaks)",
+    "[Rus Obolonsky](https://github.com/Obolrus)",
+]
+
+# One-click deeplink into the free OWOX model canvas: this prefix + the bundle's public
+# GitHub tree URL. The full URL is only rendered when --bundle-url is supplied.
+CANVAS_MODEL_URL_PREFIX = "https://model.owox.com/?okf="
+
 
 # --------------------------------------------------------------------------- #
 # HTTP helpers (stdlib only)
@@ -365,10 +378,10 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
     # they don't collapse into an unreadable run-on there.
     full_desc = intro or f"OWOX data mart '{title}'."
     frontmatter = render_frontmatter({
-        "type": "OWOX Data Mart",
         "title": title,
         "description": full_desc,
         "tags": tags,
+        "type": "OWOX Data Mart",
         "timestamp": modified,
     })
 
@@ -545,12 +558,15 @@ def collect_bundles(out_dir):
 
 
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
-                 join_indexes=None, project_description=None, preserved_regions=("", "")):
+                 join_indexes=None, project_description=None, preserved_regions=("", ""),
+                 bundle_url=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
     project_folder: slugified OWOX project name used as the subfolder name.
     join_indexes: {mart_id: build_join_index(...)} for real join keys.
     preserved_regions: (before, after) manual text to keep around the regenerated
-    index body across re-export, from read_preserved_regions()."""
+    index body across re-export, from read_preserved_regions().
+    bundle_url: public GitHub tree URL of this bundle; when set, the model index gets a
+    one-click "Explore on canvas" CTA deeplinking into the free OWOX model canvas."""
     marts_dir = os.path.join(out_dir, project_folder)
     os.makedirs(marts_dir, exist_ok=True)
     ts = _Raw(now_iso())
@@ -577,19 +593,29 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     before, after = preserved_regions
     p_intro, p_questions = split_description(project_description or "")
     di = [render_frontmatter({
-        "type": "index", "title": project_title,
+        "title": project_title,
         "description": p_intro or "Index of exported OWOX data marts.",
-        "tags": ["owox", "index"], "timestamp": ts,
+        "tags": ["owox", "index"],
+        "type": "index",
+        "timestamp": ts,
     }), ""]
     if before:
         di += [before, ""]
     # No "# {project_title}" heading — the title is already in the frontmatter. The Data
     # Mart table is the main content; example questions come after it.
-    di += [GEN_START, "", "| Data Mart | Fields |", "|-----------|--------|"]
+    di += [GEN_START, "", f"**Authors:** {', '.join(MODEL_AUTHORS)}", "",
+           "| Data Mart | Fields |", "|-----------|--------|"]
     for title, fname, nfields in sorted(index_rows):
         di.append(f"| [{_safe_cell(title)}](./{fname}) | {nfields} |")
     if p_questions:
         di += ["", "# Example Questions", ""] + [f"- {q}" for q in p_questions]
+    if bundle_url:
+        di += [
+            "", "# Explore this model", "",
+            f"**[▶ Explore on canvas]({CANVAS_MODEL_URL_PREFIX}{bundle_url})**", "",
+            "One click opens this model in a free OWOX canvas you can poke around in "
+            "— no account needed.",
+        ]
     di += ["", GEN_END]
     if after:
         di += ["", after]
@@ -599,9 +625,11 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     # bundle root index.md — a catalog of every bundle in this directory
     bundles = collect_bundles(out_dir)
     root = [render_frontmatter({
-        "type": "index", "title": "OKF Bundles",
+        "title": "OKF Bundles",
         "description": "OKF bundles generated from OWOX Data Marts.",
-        "tags": ["owox", "index"], "timestamp": ts,
+        "tags": ["owox", "index"],
+        "type": "index",
+        "timestamp": ts,
     }), "", "# OKF Bundles", "",
         f"Generated {ts}.", ""]
     for folder, title, count in bundles:
@@ -1139,6 +1167,10 @@ def main():
                    help="Skip viz.html generation.")
     p.add_argument("--folder", default=os.environ.get("BUNDLE_FOLDER"),
                    help="Override the bundle subfolder name (default: slugified project title).")
+    p.add_argument("--bundle-url", dest="bundle_url", default=os.environ.get("BUNDLE_URL"),
+                   help="Public GitHub tree URL of this bundle (e.g. "
+                        "https://github.com/OWOX/models/tree/main/bundles/finance). When set, "
+                        "the model index gets an 'Explore on canvas' deeplink ($BUNDLE_URL).")
     p.add_argument("--title", default=os.environ.get("BUNDLE_TITLE"),
                    help="Override the bundle display title (default: the OWOX project title).")
     # GitHub
@@ -1215,7 +1247,7 @@ def main():
         shutil.rmtree(bundle_dir)
     count = write_bundle(args.out, marts_with_docs, project_folder, display_title,
                          join_indexes=join_indexes, project_description=project_description,
-                         preserved_regions=preserved_regions)
+                         preserved_regions=preserved_regions, bundle_url=args.bundle_url)
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
     if args.viz:
