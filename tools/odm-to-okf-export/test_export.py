@@ -182,6 +182,126 @@ class FkLookupTests(unittest.TestCase):
         self.assertEqual(fk["region_code"], ("Warehouses", "warehouses.md"))
 
 
+class RenamedMartJoinTests(unittest.TestCase):
+    """Joins must survive a mart being renamed after its relationships were created.
+
+    OWOX freezes the alias a relationship is created with, so a mart created as
+    'Orders (E-Commerce)' and later renamed to '🥈 Orders' still carries the alias
+    `orders_e_commerce`. Matching that against a key derived from the CURRENT title
+    ('orders') misses, and the join used to degrade to plain text — a link the reader
+    can't follow and, more importantly, an edge that disappears from the model graph
+    when the bundle is imported. Resolution must go through the target mart's id.
+    """
+
+    def setUp(self):
+        self.graph = {"nodes": [{
+            "aliasPath": "products_e_commerce",
+            "isCycleStub": False,
+            "relationship": {
+                "id": "rel-1",
+                "sourceDataMart": {"id": "mart-orders"},
+                "targetDataMart": {"id": "mart-products"},
+                "targetAlias": "products_e_commerce",
+                "joinConditions": [{"sourceFieldName": "sku",
+                                    "targetFieldName": "product_code"}],
+            },
+        }]}
+        self.mart = {
+            "id": "mart-orders",
+            "title": "🥈 Orders",
+            "schema": {"fields": [{"name": "sku", "type": "STRING"}]},
+            "blendedFieldsConfig": {"sources": [
+                {"path": "products_e_commerce", "alias": "Products", "fields": {}},
+            ]},
+        }
+        self.marts = [({"id": "mart-products", "title": "🥈 Products",
+                        "schema": {"fields": [{"name": "product_code", "type": "STRING",
+                                               "isPrimaryKey": True}]}}, None)]
+
+    def test_target_index_maps_alias_path_to_target_id(self):
+        idx = export.build_target_index(self.graph, "mart-orders")
+        self.assertEqual(idx, {"products_e_commerce": "mart-products"})
+
+    def test_target_index_keeps_keyless_edges(self):
+        # build_join_index drops edges with no joinConditions, but a keyless edge is
+        # still a real link and must still resolve to a target.
+        graph = {"nodes": [{
+            "aliasPath": "pages_e_commerce", "isCycleStub": False,
+            "relationship": {"id": "rel-2",
+                             "sourceDataMart": {"id": "mart-orders"},
+                             "targetDataMart": {"id": "mart-pages"},
+                             "joinConditions": []},
+        }]}
+        self.assertEqual(export.build_join_index(graph, "mart-orders"), {})
+        self.assertEqual(export.build_target_index(graph, "mart-orders"),
+                         {"pages_e_commerce": "mart-pages"})
+
+    def test_renamed_target_still_renders_a_link(self):
+        out = export._render_joins_section(
+            self.mart, export._build_path_lookup(self.marts),
+            export.build_join_index(self.graph, "mart-orders"),
+            export.build_target_index(self.graph, "mart-orders"),
+            export._build_id_lookup(self.marts))
+        self.assertIn("- [Products](./products.md) — `sku = product_code`", out)
+
+    def test_id_resolution_wins_when_both_path_and_alias_are_stale(self):
+        # The hard case, and the reason resolution must go through the id: the mart was
+        # renamed, so NEITHER the frozen path nor the stored display alias matches the
+        # current title. Without the target index this is the unlinked line that broke
+        # the imported model graph; with it, the join resolves.
+        mart = dict(self.mart, blendedFieldsConfig={"sources": [
+            {"path": "products_e_commerce", "alias": "Products (E-Commerce)", "fields": {}}]})
+        path_lookup = export._build_path_lookup(self.marts)
+        join_index = export.build_join_index(self.graph, "mart-orders")
+
+        without = export._render_joins_section(mart, path_lookup, join_index)
+        self.assertIn("- Products (E-Commerce)\n", without)
+        self.assertNotIn("](./products.md)", without)
+
+        with_ids = export._render_joins_section(
+            mart, path_lookup, join_index,
+            export.build_target_index(self.graph, "mart-orders"),
+            export._build_id_lookup(self.marts))
+        self.assertIn("- [Products (E-Commerce)](./products.md) — `sku = product_code`",
+                      with_ids)
+
+    def test_blend_only_source_resolves_via_display_alias(self):
+        # A blendedFieldsConfig source with no relationship edge at all: there is no id
+        # to resolve through, so the display alias is the last resort.
+        mart = dict(self.mart, blendedFieldsConfig={"sources": [
+            {"path": "products_e_commerce", "alias": "Products", "fields": {}}]})
+        out = export._render_joins_section(
+            mart, export._build_path_lookup(self.marts), {}, {},
+            export._build_id_lookup(self.marts))
+        self.assertIn("- [Products](./products.md)", out)
+
+    def test_related_mart_without_blend_config_still_gets_a_join(self):
+        # A plain lookup edge is never written into blendedFieldsConfig, so relying on
+        # the blend config alone silently drops the link (live case: Unified Ad Spend →
+        # Traffic Sources).
+        mart = {"id": "mart-orders", "title": "🥈 Orders",
+                "schema": {"fields": [{"name": "sku", "type": "STRING"}]},
+                "blendedFieldsConfig": None}
+        out = export._render_joins_section(
+            mart, export._build_path_lookup(self.marts),
+            export.build_join_index(self.graph, "mart-orders"),
+            export.build_target_index(self.graph, "mart-orders"),
+            export._build_id_lookup(self.marts))
+        self.assertIn("- [🥈 Products](./products.md) — `sku = product_code`", out)
+
+    def test_no_relationships_and_no_blend_config_stays_empty(self):
+        mart = {"id": "mart-solo", "title": "Solo", "blendedFieldsConfig": None}
+        self.assertEqual(export._render_joins_section(mart, {}, {}, {}, {}), "")
+
+    def test_fk_note_resolves_through_the_renamed_target(self):
+        fk = export._fk_lookup(
+            self.mart, export._build_path_lookup(self.marts),
+            export.build_join_index(self.graph, "mart-orders"),
+            export.build_target_index(self.graph, "mart-orders"),
+            export._build_id_lookup(self.marts))
+        self.assertEqual(fk["sku"], ("🥈 Products", "products.md"))
+
+
 class StorageFilterTests(unittest.TestCase):
     def setUp(self):
         self.storages = [
