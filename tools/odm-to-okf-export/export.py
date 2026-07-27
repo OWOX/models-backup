@@ -230,6 +230,40 @@ def build_join_index(graph, mart_id):
     return index
 
 
+def build_target_index(graph, mart_id):
+    """Map a mart's direct joins to the TARGET MART ID, {path_key: target_mart_id}.
+
+    The join target must be resolved by id, not by a string derived from the target's
+    title: OWOX keeps the alias a relationship was created with, so a mart that was
+    later renamed still carries its historical alias (`orders_e_commerce` for a mart
+    now titled `🥈 Orders`). Matching those aliases against title-derived keys silently
+    fails and the join then exports as plain text instead of a link, which is invisible
+    to a reader but breaks the model graph on import.
+
+    Unlike build_join_index this keeps keyless edges too — a join with no recorded
+    conditions is still a real edge and must still produce a link.
+    """
+    index, seen = {}, set()
+    for node in (graph or {}).get("nodes") or []:
+        if not isinstance(node, dict) or node.get("isCycleStub"):
+            continue
+        rel = node.get("relationship") or {}
+        rel_id = rel.get("id")
+        if not rel_id or rel_id in seen:
+            continue
+        if (rel.get("sourceDataMart") or {}).get("id") != mart_id:
+            continue
+        path = node.get("aliasPath") or rel.get("targetAlias") or ""
+        if not path or "." in path:
+            continue
+        target_id = (rel.get("targetDataMart") or {}).get("id")
+        if not target_id:
+            continue
+        seen.add(rel_id)
+        index[path] = target_id
+    return index
+
+
 def fetch_sample_rows(api_origin, headers, mart_id, n):
     """Stream the .ndjson endpoint and stop after n rows (does not download all)."""
     if n <= 0:
@@ -418,20 +452,56 @@ def now_iso():
 # --------------------------------------------------------------------------- #
 # Bundle writing
 # --------------------------------------------------------------------------- #
+def _path_key(text):
+    """OWOX's internal path-key form of a display string (underscore slug)."""
+    return re.sub(r"[^a-z0-9]+", "_", (text or "").lower()).strip("_")
+
+
 def _build_path_lookup(marts_with_docs):
     """Map OWOX internal path keys (underscore slugs) → (display title, filename, pk_fields)."""
     lookup = {}
     for mart, _ in marts_with_docs:
         title = mart.get("title") or mart.get("id", "")
         fname = slugify(title, mart.get("id", "")) + ".md"
-        path_key = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")
         pks = [f["name"] for f in (mart.get("schema") or {}).get("fields", [])
                if f.get("isPrimaryKey")]
-        lookup[path_key] = (title, fname, pks)
+        lookup[_path_key(title)] = (title, fname, pks)
     return lookup
 
 
-def _fk_lookup(mart, path_lookup, join_index=None):
+def _build_id_lookup(marts_with_docs):
+    """Map mart id → (display title, filename, pk_fields).
+
+    Keyed by the one identifier that never drifts, so a join can be resolved even when
+    the mart has been renamed since the relationship was created."""
+    lookup = {}
+    for mart, _ in marts_with_docs:
+        mart_id = mart.get("id", "")
+        if not mart_id:
+            continue
+        title = mart.get("title") or mart_id
+        pks = [f["name"] for f in (mart.get("schema") or {}).get("fields", [])
+               if f.get("isPrimaryKey")]
+        lookup[mart_id] = (title, slugify(title, mart_id) + ".md", pks)
+    return lookup
+
+
+def _resolve_target(path, alias, path_lookup, target_index, id_lookup):
+    """(title, filename, pk_fields) for a join target, or None.
+
+    Three resolvers, most authoritative first: the mart id recorded on the relationship
+    edge; the literal blendedFieldsConfig path; and finally the source's display alias,
+    which covers blend-only sources that have no relationship edge at all.
+    """
+    target_id = (target_index or {}).get(path)
+    if target_id and target_id in (id_lookup or {}):
+        return id_lookup[target_id]
+    if path in path_lookup:
+        return path_lookup[path]
+    return path_lookup.get(_path_key(alias))
+
+
+def _fk_lookup(mart, path_lookup, join_index=None, target_index=None, id_lookup=None):
     """Return dict of field_name → (linked_title, linked_fname) for FK fields.
 
     The FK note belongs on the column that actually carries the foreign key, which the
@@ -442,9 +512,19 @@ def _fk_lookup(mart, path_lookup, join_index=None):
     direct = [s for s in sources
               if "." not in s.get("path", "") and not s.get("isExcluded")]
     join_index = join_index or {}
+    target_index = target_index or {}
+    id_lookup = id_lookup or {}
+
+    seen_paths = {s.get("path") for s in direct}
+    for path in target_index:
+        if path not in seen_paths:
+            entry = id_lookup.get(target_index[path])
+            direct.append({"path": path, "alias": entry[0] if entry else path})
+
     fk = {}
     for src in direct:
-        entry = path_lookup.get(src["path"])
+        entry = _resolve_target(src["path"], src.get("alias") or src["path"],
+                                path_lookup, target_index, id_lookup)
         if not entry:
             continue
         linked_title, linked_fname, pks = entry
@@ -458,8 +538,14 @@ def _fk_lookup(mart, path_lookup, join_index=None):
     return fk
 
 
-def _render_joins_section(mart, path_lookup, join_index=None):
-    """Return a ## Joins markdown section from blendedFieldsConfig, or empty string.
+def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
+                          id_lookup=None):
+    """Return a ## Joins markdown section, or empty string.
+
+    Sources come from blendedFieldsConfig, plus any direct relationship edge the graph
+    reports that blendedFieldsConfig doesn't mention — a mart can be joined without ever
+    being blended (nothing writes a blend config for a plain lookup edge), and dropping
+    those edges silently loses real links from the exported model.
 
     Join keys come from the mart's relationship graph (`joinConditions`), which is the
     only place the real column pair is recorded — a join may bind columns with different
@@ -470,15 +556,25 @@ def _render_joins_section(mart, path_lookup, join_index=None):
     sources = (mart.get("blendedFieldsConfig") or {}).get("sources") or []
     direct = [s for s in sources
               if "." not in s.get("path", "") and not s.get("isExcluded")]
+    join_index = join_index or {}
+    target_index = target_index or {}
+    id_lookup = id_lookup or {}
+
+    seen_paths = {s.get("path") for s in direct}
+    for path in target_index:
+        if path not in seen_paths:
+            entry = id_lookup.get(target_index[path])
+            direct.append({"path": path, "alias": entry[0] if entry else path})
+
     if not direct:
         return ""
-    join_index = join_index or {}
     local_cols = {f.get("name") for f in (mart.get("schema") or {}).get("fields", [])
                   if isinstance(f, dict)}
     lines = ["## Joins", ""]
     for src in direct:
-        alias = (src.get("alias") or src["path"]).replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
-        matched = path_lookup.get(src["path"])
+        raw_alias = src.get("alias") or src["path"]
+        alias = raw_alias.replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
+        matched = _resolve_target(src["path"], raw_alias, path_lookup, target_index, id_lookup)
         if matched:
             _, fname, target_pks = matched
             pairs = join_index.get(src["path"])
@@ -559,10 +655,12 @@ def collect_bundles(out_dir):
 
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
                  join_indexes=None, project_description=None, preserved_regions=("", ""),
-                 bundle_url=None):
+                 bundle_url=None, target_indexes=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
     project_folder: slugified OWOX project name used as the subfolder name.
     join_indexes: {mart_id: build_join_index(...)} for real join keys.
+    target_indexes: {mart_id: build_target_index(...)} to resolve each join to its
+    target mart by id, which survives renames that break title-derived matching.
     preserved_regions: (before, after) manual text to keep around the regenerated
     index body across re-export, from read_preserved_regions().
     bundle_url: public GitHub tree URL of this bundle; when set, the model index gets a
@@ -571,14 +669,17 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     os.makedirs(marts_dir, exist_ok=True)
     ts = _Raw(now_iso())
     join_indexes = join_indexes or {}
+    target_indexes = target_indexes or {}
 
     path_lookup = _build_path_lookup(marts_with_docs)
+    id_lookup = _build_id_lookup(marts_with_docs)
 
     index_rows = []
     for mart, doc in marts_with_docs:
         mart_id = mart.get("id", "")
         fname = slugify(mart.get("title", ""), mart_id) + ".md"
-        joins = _render_joins_section(mart, path_lookup, join_indexes.get(mart_id))
+        joins = _render_joins_section(mart, path_lookup, join_indexes.get(mart_id),
+                                      target_indexes.get(mart_id), id_lookup)
         if joins:
             doc = doc.rstrip("\n") + "\n\n" + joins
         with open(os.path.join(marts_dir, fname), "w", encoding="utf-8") as fh:
@@ -1223,20 +1324,25 @@ def main():
 
     marts_with_docs = []
     join_indexes = {}
+    target_indexes = {}
     for mart_id in ids:
         print(f"Fetching {mart_id} ...")
         mart = get_data_mart(api_origin, headers, mart_id)
         sample = fetch_sample_rows(api_origin, headers, mart_id, args.sample_rows)
         graph = get_relationships_graph(api_origin, headers, mart_id)
         join_indexes[mart_id] = build_join_index(graph, mart_id)
+        target_indexes[mart_id] = build_target_index(graph, mart_id)
         marts_with_docs.append((mart, sample))
 
     # Render docs after all marts are fetched so FK cross-references can be resolved
     path_lookup_pre = _build_path_lookup([(m, None) for m, _ in marts_with_docs])
+    id_lookup_pre = _build_id_lookup([(m, None) for m, _ in marts_with_docs])
     marts_with_docs = [
         (mart, render_data_mart_doc(mart, api_origin, sample,
                                     fk=_fk_lookup(mart, path_lookup_pre,
-                                                  join_indexes.get(mart.get("id")))))
+                                                  join_indexes.get(mart.get("id")),
+                                                  target_indexes.get(mart.get("id")),
+                                                  id_lookup_pre)))
         for mart, sample in marts_with_docs
     ]
 
@@ -1247,7 +1353,8 @@ def main():
         shutil.rmtree(bundle_dir)
     count = write_bundle(args.out, marts_with_docs, project_folder, display_title,
                          join_indexes=join_indexes, project_description=project_description,
-                         preserved_regions=preserved_regions, bundle_url=args.bundle_url)
+                         preserved_regions=preserved_regions, bundle_url=args.bundle_url,
+                         target_indexes=target_indexes)
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
     if args.viz:
