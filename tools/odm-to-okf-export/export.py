@@ -350,7 +350,13 @@ def render_frontmatter(fields):
 
 
 def extract_columns(schema):
-    """Best-effort: pull a list of (name, type, description) from OWOX's schema object."""
+    """Best-effort: pull a list of (name, type, alias, description, is_pk) from OWOX's
+    schema object.
+
+    `alias` is the field's business-friendly label, carried by every well-described OWOX
+    data mart. It is its own cell in the OKF schema table — it must NOT be folded into
+    `name` (it stayed a mere fallback for a missing `name` for too long, which is how the
+    alias silently vanished from every exported bundle)."""
     if not isinstance(schema, dict):
         return []
     fields = next(
@@ -365,18 +371,32 @@ def extract_columns(schema):
             continue
         name = f.get("name") or f.get("alias") or f.get("field") or ""
         ftype = f.get("type") or f.get("dataType") or f.get("mode") or ""
+        alias = f.get("alias") or ""
         desc = f.get("description") or f.get("title") or ""
         is_pk = bool(f.get("isPrimaryKey"))
-        cols.append((str(name), str(ftype), str(desc), is_pk))
+        cols.append((str(name), str(ftype), str(alias), str(desc), is_pk))
     return cols
+
+
+def _schema_cell(text):
+    """Make a string safe to sit in one markdown table cell."""
+    return text.replace("|", "\\|").replace("\n", " ")
 
 
 def render_schema_section(schema, fk=None):
     cols = extract_columns(schema)
     if cols:
-        out = ["# Schema", "", "| Column | Type | Description |", "|--------|------|-------------|"]
-        for name, ftype, desc, is_pk in cols:
-            desc = desc.replace("|", "\\|").replace("\n", " ")
+        # The Alias column is emitted only when at least one field has an alias, so marts
+        # without any keep the leaner 3-column table. Same rule, same column order as the
+        # canvas serializer (packages/okf/src/serialize.ts), whose parser locates cells by
+        # header name — so both table widths import identically.
+        with_alias = any(alias.strip() for _n, _t, alias, _d, _pk in cols)
+        header = (["| Column | Type | Alias | Description |",
+                   "|--------|------|-------|-------------|"] if with_alias else
+                  ["| Column | Type | Description |", "|--------|------|-------------|"])
+        out = ["# Schema", ""] + header
+        for name, ftype, alias, desc, is_pk in cols:
+            desc = _schema_cell(desc)
             # Cell order matches the canvas serializer: "PK." marker first, then the
             # description, then any "FK to [Target]" note. The canvas parser reads a
             # leading "PK." as the primary key (parse.ts) — this is what lets the ERD
@@ -389,7 +409,9 @@ def render_schema_section(schema, fk=None):
             if fk and name in fk:
                 linked_title, linked_fname = fk[name]
                 parts.append(f"FK to [{linked_title}](./{linked_fname})")
-            out.append(f"| `{name}` | {ftype} | {' '.join(parts).strip()} |")
+            cells = [f"`{name}`", ftype] + ([_schema_cell(alias)] if with_alias else []) \
+                + [" ".join(parts).strip()]
+            out.append("| " + " | ".join(cells) + " |")
         return "\n".join(out)
     if schema:
         return "# Schema\n\n```json\n" + json.dumps(schema, indent=2, ensure_ascii=False) + "\n```"

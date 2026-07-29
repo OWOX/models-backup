@@ -444,6 +444,69 @@ class BuildVizDataTests(unittest.TestCase):
         self.assertEqual(by_id["saas/no_frontmatter"]["label"], "no_frontmatter")
 
 
+class SchemaAliasColumnTests(unittest.TestCase):
+    """The per-field `alias` is the business-friendly column label a data mart carries in
+    OWOX. It is part of the OKF schema table (4th form, `| Column | Type | Alias |
+    Description |`) and the canvas reads it on import, so dropping it here silently
+    degrades every imported model."""
+
+    @staticmethod
+    def _schema(fields):
+        return {"type": "bigquery-data-mart-schema", "fields": fields}
+
+    def test_alias_column_is_emitted_when_a_field_has_one(self):
+        section = export.render_schema_section(self._schema([
+            {"name": "txn_id", "type": "STRING", "isPrimaryKey": True,
+             "alias": "Transaction ID", "description": "Unique transaction identifier."},
+            {"name": "amount", "type": "NUMERIC", "alias": "Amount",
+             "description": "Transaction amount."},
+        ]))
+        self.assertIn("| Column | Type | Alias | Description |", section)
+        self.assertIn("|--------|------|-------|-------------|", section)
+        self.assertIn("| `txn_id` | STRING | Transaction ID | PK. Unique transaction identifier. |",
+                      section)
+        self.assertIn("| `amount` | NUMERIC | Amount | Transaction amount. |", section)
+
+    def test_no_alias_column_when_no_field_has_one(self):
+        section = export.render_schema_section(self._schema([
+            {"name": "txn_id", "type": "STRING", "isPrimaryKey": True, "description": "Unique id."},
+        ]))
+        self.assertIn("| Column | Type | Description |", section)
+        self.assertNotIn("Alias", section)
+        self.assertIn("| `txn_id` | STRING | PK. Unique id. |", section)
+
+    def test_field_without_alias_gets_an_empty_cell(self):
+        section = export.render_schema_section(self._schema([
+            {"name": "id", "type": "STRING", "isPrimaryKey": True, "alias": "Customer ID"},
+            {"name": "legacy_flag", "type": "BOOLEAN", "description": "Untouched storage field."},
+        ]))
+        self.assertIn("| `legacy_flag` | BOOLEAN |  | Untouched storage field. |", section)
+
+    def test_alias_is_not_mistaken_for_the_column_name(self):
+        """`alias` used to be read as a *fallback* for a missing name — never as its own
+        cell. A field that has both must render the real name in Column."""
+        section = export.render_schema_section(self._schema([
+            {"name": "mcc", "type": "STRING", "alias": "Merchant Category Code"},
+        ]))
+        self.assertIn("| `mcc` | STRING | Merchant Category Code |  |", section)
+
+    def test_pipe_in_an_alias_is_escaped(self):
+        section = export.render_schema_section(self._schema([
+            {"name": "status", "type": "STRING", "alias": "Status | State"},
+        ]))
+        # Escaped, so the alias stays inside its own cell instead of splitting the row.
+        self.assertIn("| `status` | STRING | Status \\| State |  |", section)
+
+    def test_fk_note_still_follows_the_description_in_its_own_cell(self):
+        section = export.render_schema_section(
+            self._schema([{"name": "customer_id", "type": "STRING", "alias": "Customer ID",
+                           "description": "Owning customer."}]),
+            fk={"customer_id": ("Customer", "customer.md")})
+        self.assertIn(
+            "| `customer_id` | STRING | Customer ID | Owning customer. "
+            "FK to [Customer](./customer.md) |", section)
+
+
 class UniversalOkfFormatTests(unittest.TestCase):
     def test_render_frontmatter_block_scalar_roundtrips(self):
         import yaml  # test-only; exporter runtime stays stdlib
