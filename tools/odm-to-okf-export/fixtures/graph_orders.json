@@ -11,6 +11,7 @@
         "sourceDataMart": {"id": "mart-orders", "title": "Orders"},
         "targetDataMart": {"id": "mart-customers", "title": "Customers"},
         "targetAlias": "customers",
+        "description": "Each order is placed by one customer.",
         "joinConditions": [{"sourceFieldName": "customer_id", "targetFieldName": "customer_id"}]
       }
     },
