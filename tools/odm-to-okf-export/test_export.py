@@ -729,3 +729,57 @@ def test_index_canvas_cta_rendered_only_with_bundle_url():
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class JoinDescriptionTests(unittest.TestCase):
+    """A relationship can carry a free-text business meaning ("Each order is placed by one
+    customer"). It is the only part of a join a reader cannot infer from the keys, so it
+    must survive the export — as trailing text on the join line, which every OKF parser
+    already ignores when it does not understand it."""
+
+    def setUp(self):
+        self.graph = load_fixture("graph_orders.json")
+        self.mart = {
+            "id": "mart-orders",
+            "title": "Orders",
+            "schema": {"fields": [
+                {"name": "order_id", "type": "STRING", "isPrimaryKey": True},
+                {"name": "customer_id", "type": "STRING"},
+                {"name": "sku", "type": "STRING"},
+            ]},
+            "blendedFieldsConfig": {"sources": [
+                {"path": "customers", "alias": "Customers", "fields": {}},
+                {"path": "products", "alias": "Products", "fields": {}},
+            ]},
+        }
+        self.path_lookup = {
+            "customers": ("Customers", "customers.md", ["customer_id"]),
+            "products": ("Products", "products.md", ["product_code"]),
+        }
+
+    def test_index_maps_direct_paths_to_their_description(self):
+        idx = export.build_description_index(self.graph, "mart-orders")
+        self.assertEqual(idx, {"customers": "Each order is placed by one customer."})
+
+    def test_empty_graph_is_empty_index(self):
+        self.assertEqual(export.build_description_index({"nodes": []}, "mart-orders"), {})
+        self.assertEqual(export.build_description_index(None, "mart-orders"), {})
+
+    def test_description_is_rendered_after_the_keys(self):
+        out = export._render_joins_section(
+            self.mart, self.path_lookup,
+            export.build_join_index(self.graph, "mart-orders"),
+            description_index=export.build_description_index(self.graph, "mart-orders"))
+        self.assertIn(
+            "- [Customers](./customers.md) — `customer_id = customer_id` "
+            "— Each order is placed by one customer.",
+            out)
+        # an undescribed edge keeps its old shape, with nothing trailing
+        self.assertIn("- [Products](./products.md) — `sku = product_code`\n", out)
+
+    def test_description_renders_on_a_keyless_join_too(self):
+        out = export._render_joins_section(
+            self.mart, self.path_lookup, {},
+            description_index={"products": "Order lines reference the catalogue."})
+        self.assertIn("- [Products](./products.md) — Order lines reference the catalogue.\n",
+                      out)

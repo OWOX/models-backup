@@ -230,6 +230,31 @@ def build_join_index(graph, mart_id):
     return index
 
 
+def build_description_index(graph, mart_id):
+    """Map a mart's direct joins to the relationship DESCRIPTION, {path_key: description}.
+
+    The description is the edge's business meaning ("Each order is placed by one
+    customer") — the one part of a join that cannot be read off the join keys, and what an
+    AI assistant is given to explain how two data marts relate. Same filtering as
+    build_join_index: only edges leaving `mart_id`, no cycle stubs, no multi-hop paths.
+    Undescribed edges are simply absent.
+    """
+    index = {}
+    for node in (graph or {}).get("nodes") or []:
+        if not isinstance(node, dict) or node.get("isCycleStub"):
+            continue
+        rel = node.get("relationship") or {}
+        if (rel.get("sourceDataMart") or {}).get("id") != mart_id:
+            continue
+        path = node.get("aliasPath") or rel.get("targetAlias") or ""
+        if not path or "." in path:
+            continue
+        description = (rel.get("description") or "").strip()
+        if description:
+            index[path] = description
+    return index
+
+
 def build_target_index(graph, mart_id):
     """Map a mart's direct joins to the TARGET MART ID, {path_key: target_mart_id}.
 
@@ -561,7 +586,7 @@ def _fk_lookup(mart, path_lookup, join_index=None, target_index=None, id_lookup=
 
 
 def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
-                          id_lookup=None):
+                          id_lookup=None, description_index=None):
     """Return a ## Joins markdown section, or empty string.
 
     Sources come from blendedFieldsConfig, plus any direct relationship edge the graph
@@ -574,6 +599,10 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
     names (`sku = product_code`). When a source has no relationship (blend-only sources,
     or an API that withheld the graph) we fall back to the older heuristic: a column named
     exactly like the target's primary key. A link with neither stays bare, as before.
+
+    A described edge also carries its business meaning as trailing text after the keys — an
+    OKF parser that does not know about it reads the keys and the cardinality out of the
+    line and ignores the rest, so the addition costs older readers nothing.
     """
     sources = (mart.get("blendedFieldsConfig") or {}).get("sources") or []
     direct = [s for s in sources
@@ -581,6 +610,7 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
     join_index = join_index or {}
     target_index = target_index or {}
     id_lookup = id_lookup or {}
+    description_index = description_index or {}
 
     seen_paths = {s.get("path") for s in direct}
     for path in target_index:
@@ -603,7 +633,9 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
             if not pairs:
                 pairs = [(pk, pk) for pk in target_pks if pk in local_cols]
             cond = ", ".join(f"`{left} = {right}`" for left, right in pairs)
-            lines.append(f"- [{alias}](./{fname}) — {cond}" if cond
+            meaning = description_index.get(src["path"], "")
+            tail = " — ".join(part for part in (cond, meaning) if part)
+            lines.append(f"- [{alias}](./{fname}) — {tail}" if tail
                          else f"- [{alias}](./{fname})")
         else:
             lines.append(f"- {alias}")
@@ -677,12 +709,14 @@ def collect_bundles(out_dir):
 
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
                  join_indexes=None, project_description=None, preserved_regions=("", ""),
-                 bundle_url=None, target_indexes=None):
+                 bundle_url=None, target_indexes=None, description_indexes=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
     project_folder: slugified OWOX project name used as the subfolder name.
     join_indexes: {mart_id: build_join_index(...)} for real join keys.
     target_indexes: {mart_id: build_target_index(...)} to resolve each join to its
     target mart by id, which survives renames that break title-derived matching.
+    description_indexes: {mart_id: build_description_index(...)} for the business meaning
+    an analyst wrote on each edge, which nothing else in the bundle records.
     preserved_regions: (before, after) manual text to keep around the regenerated
     index body across re-export, from read_preserved_regions().
     bundle_url: public GitHub tree URL of this bundle; when set, the model index gets a
@@ -692,6 +726,7 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     ts = _Raw(now_iso())
     join_indexes = join_indexes or {}
     target_indexes = target_indexes or {}
+    description_indexes = description_indexes or {}
 
     path_lookup = _build_path_lookup(marts_with_docs)
     id_lookup = _build_id_lookup(marts_with_docs)
@@ -701,7 +736,8 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
         mart_id = mart.get("id", "")
         fname = slugify(mart.get("title", ""), mart_id) + ".md"
         joins = _render_joins_section(mart, path_lookup, join_indexes.get(mart_id),
-                                      target_indexes.get(mart_id), id_lookup)
+                                      target_indexes.get(mart_id), id_lookup,
+                                      description_indexes.get(mart_id))
         if joins:
             doc = doc.rstrip("\n") + "\n\n" + joins
         with open(os.path.join(marts_dir, fname), "w", encoding="utf-8") as fh:
@@ -1347,6 +1383,7 @@ def main():
     marts_with_docs = []
     join_indexes = {}
     target_indexes = {}
+    description_indexes = {}
     for mart_id in ids:
         print(f"Fetching {mart_id} ...")
         mart = get_data_mart(api_origin, headers, mart_id)
@@ -1354,6 +1391,7 @@ def main():
         graph = get_relationships_graph(api_origin, headers, mart_id)
         join_indexes[mart_id] = build_join_index(graph, mart_id)
         target_indexes[mart_id] = build_target_index(graph, mart_id)
+        description_indexes[mart_id] = build_description_index(graph, mart_id)
         marts_with_docs.append((mart, sample))
 
     # Render docs after all marts are fetched so FK cross-references can be resolved
@@ -1376,7 +1414,8 @@ def main():
     count = write_bundle(args.out, marts_with_docs, project_folder, display_title,
                          join_indexes=join_indexes, project_description=project_description,
                          preserved_regions=preserved_regions, bundle_url=args.bundle_url,
-                         target_indexes=target_indexes)
+                         target_indexes=target_indexes,
+                         description_indexes=description_indexes)
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
     if args.viz:
