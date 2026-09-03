@@ -230,6 +230,58 @@ def build_join_index(graph, mart_id):
     return index
 
 
+def build_node_index(mart, graph, id_lookup):
+    """Join nodes deeper than one hop: {live path: {target_file, target_title, alias, description}}.
+
+    Two things live only here. The node's LABEL, because the reporting column picker is one
+    flat list and a mart can reach the same target twice — two sources both reading "Account"
+    are indistinguishable however well each is described. And its DESCRIPTION, because a node
+    reached through a hop is not the edge that defines it: "the account billed on this
+    invoice" is wrong for the account of the billed *subscription*.
+
+    The label is always reported, even where it equals what the path implies ("Subscription
+    Account"): a reader importing this bundle should COPY what ODM calls the node, not
+    re-derive it and risk a second source called "Account". Where the live config says
+    nothing, the derived name is what ODM shows, so that is what travels.
+    """
+    sources = {s.get("path"): s for s in
+               ((mart.get("blendedFieldsConfig") or {}).get("sources") or [])}
+    titles, targets = {}, {}
+    for node in (graph or {}).get("nodes") or []:
+        if not isinstance(node, dict) or node.get("isCycleStub"):
+            continue
+        rel = node.get("relationship") or {}
+        path = node.get("aliasPath")
+        target_id = (rel.get("targetDataMart") or {}).get("id")
+        if not path or target_id not in (id_lookup or {}):
+            continue
+        targets[path] = target_id
+        titles[path] = id_lookup[target_id][0]
+
+    out = {}
+    for path, target_id in sorted(targets.items()):
+        if "." not in path:
+            continue
+        src = sources.get(path) or {}
+        if src.get("isExcluded"):
+            continue
+        title, fname, _pks = id_lookup[target_id]
+        derived = " ".join(titles.get(prefix, prefix) for prefix in _path_prefixes(path))
+        out[path] = {
+            "target_file": fname,
+            "target_title": title,
+            "alias": (src.get("alias") or "").strip() or derived,
+            "description": (src.get("description") or "").strip(),
+        }
+    return out
+
+
+def _path_prefixes(path):
+    """`a.b.c` -> [`a`, `a.b`, `a.b.c`] — each hop of a node's path, as the graph keys it."""
+    segments = path.split(".")
+    return [".".join(segments[:i + 1]) for i in range(len(segments))]
+
+
 def build_description_index(graph, mart_id):
     """Map a mart's direct joins to the relationship DESCRIPTION, {path_key: description}.
 
@@ -586,7 +638,7 @@ def _fk_lookup(mart, path_lookup, join_index=None, target_index=None, id_lookup=
 
 
 def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
-                          id_lookup=None, description_index=None):
+                          id_lookup=None, description_index=None, node_index=None):
     """Return a ## Joins markdown section, or empty string.
 
     Sources come from blendedFieldsConfig, plus any direct relationship edge the graph
@@ -603,6 +655,14 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
     A described edge also carries its business meaning as trailing text after the keys — an
     OKF parser that does not know about it reads the keys and the cardinality out of the
     line and ignores the rest, so the addition costs older readers nothing.
+
+    Nodes deeper than one hop hang off their parent as INDENTED bullets, so the tree itself
+    says which path each one is: an Account under Subscription is `subscription.account`, and
+    needs no key of its own written anywhere. An authored label (one the path does not imply)
+    comes bold before the description. Indentation is what keeps this invisible to older
+    readers: both OKF parsers anchor their join regex at the line start, and the tolerant
+    prose pass of the canvas skips any list item beginning with a link — which is why a
+    nested bullet must start with its link and nothing else.
     """
     sources = (mart.get("blendedFieldsConfig") or {}).get("sources") or []
     direct = [s for s in sources
@@ -611,6 +671,7 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
     target_index = target_index or {}
     id_lookup = id_lookup or {}
     description_index = description_index or {}
+    node_index = node_index or {}
 
     seen_paths = {s.get("path") for s in direct}
     for path in target_index:
@@ -637,10 +698,30 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
             tail = " — ".join(part for part in (cond, meaning) if part)
             lines.append(f"- [{alias}](./{fname}) — {tail}" if tail
                          else f"- [{alias}](./{fname})")
+            lines.extend(_render_node_bullets(src["path"], node_index))
         else:
             lines.append(f"- {alias}")
     lines.append("")
     return "\n".join(lines)
+
+
+def _render_node_bullets(root_path, node_index):
+    """Indented bullets for every node reached THROUGH `root_path`, deepest last.
+
+    One line per node, and the same shape as a direct join bullet: the link TEXT is what ODM
+    calls this node ("Subscription Account"), the link TARGET is which mart it is, and the
+    trailing text is what the node means from this mart. Two spaces of indent per hop, so the
+    nesting is the path.
+    """
+    lines = []
+    for path in sorted(p for p in node_index if p.startswith(root_path + ".")):
+        entry = node_index[path]
+        depth = path.count(".")
+        label = entry["alias"].replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
+        link = f"[{label}](./{entry['target_file']})"
+        lines.append(f"{'  ' * depth}- {link} — {entry['description']}"
+                     if entry["description"] else f"{'  ' * depth}- {link}")
+    return lines
 
 
 def read_frontmatter(path):
@@ -709,7 +790,8 @@ def collect_bundles(out_dir):
 
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
                  join_indexes=None, project_description=None, preserved_regions=("", ""),
-                 bundle_url=None, target_indexes=None, description_indexes=None):
+                 bundle_url=None, target_indexes=None, description_indexes=None,
+                 node_indexes=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
     project_folder: slugified OWOX project name used as the subfolder name.
     join_indexes: {mart_id: build_join_index(...)} for real join keys.
@@ -717,6 +799,8 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     target mart by id, which survives renames that break title-derived matching.
     description_indexes: {mart_id: build_description_index(...)} for the business meaning
     an analyst wrote on each edge, which nothing else in the bundle records.
+    node_indexes: {mart_id: build_node_index(...)} for the label and meaning of each join
+    node deeper than one hop, rendered as the nested bullets of the Joins section.
     preserved_regions: (before, after) manual text to keep around the regenerated
     index body across re-export, from read_preserved_regions().
     bundle_url: public GitHub tree URL of this bundle; when set, the model index gets a
@@ -727,6 +811,7 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     join_indexes = join_indexes or {}
     target_indexes = target_indexes or {}
     description_indexes = description_indexes or {}
+    node_indexes = node_indexes or {}
 
     path_lookup = _build_path_lookup(marts_with_docs)
     id_lookup = _build_id_lookup(marts_with_docs)
@@ -737,7 +822,8 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
         fname = slugify(mart.get("title", ""), mart_id) + ".md"
         joins = _render_joins_section(mart, path_lookup, join_indexes.get(mart_id),
                                       target_indexes.get(mart_id), id_lookup,
-                                      description_indexes.get(mart_id))
+                                      description_indexes.get(mart_id),
+                                      node_indexes.get(mart_id))
         if joins:
             doc = doc.rstrip("\n") + "\n\n" + joins
         with open(os.path.join(marts_dir, fname), "w", encoding="utf-8") as fh:
@@ -1384,6 +1470,7 @@ def main():
     join_indexes = {}
     target_indexes = {}
     description_indexes = {}
+    graphs = {}
     for mart_id in ids:
         print(f"Fetching {mart_id} ...")
         mart = get_data_mart(api_origin, headers, mart_id)
@@ -1392,6 +1479,7 @@ def main():
         join_indexes[mart_id] = build_join_index(graph, mart_id)
         target_indexes[mart_id] = build_target_index(graph, mart_id)
         description_indexes[mart_id] = build_description_index(graph, mart_id)
+        graphs[mart_id] = graph
         marts_with_docs.append((mart, sample))
 
     # Render docs after all marts are fetched so FK cross-references can be resolved
@@ -1415,7 +1503,11 @@ def main():
                          join_indexes=join_indexes, project_description=project_description,
                          preserved_regions=preserved_regions, bundle_url=args.bundle_url,
                          target_indexes=target_indexes,
-                         description_indexes=description_indexes)
+                         description_indexes=description_indexes,
+                         node_indexes={
+                             m.get("id"): build_node_index(m, graphs.get(m.get("id")),
+                                                           id_lookup_pre)
+                             for m, _ in marts_with_docs})
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
     if args.viz:

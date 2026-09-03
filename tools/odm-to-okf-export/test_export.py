@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import os
+import re
 import shutil
 import tempfile
 import unittest
@@ -783,3 +784,98 @@ class JoinDescriptionTests(unittest.TestCase):
             description_index={"products": "Order lines reference the catalogue."})
         self.assertIn("- [Products](./products.md) — Order lines reference the catalogue.\n",
                       out)
+
+
+class JoinNodeTreeTests(unittest.TestCase):
+    """A join node deeper than one hop hangs off its parent as an indented bullet, so the
+    tree says which path it is. Indentation is also what hides it from older readers: both
+    OKF parsers anchor their join regex at the line start."""
+
+    def setUp(self):
+        self.graph = {"nodes": [
+            {"aliasPath": "customers_x", "isCycleStub": False, "relationship": {
+                "sourceDataMart": {"id": "mart-orders"},
+                "targetDataMart": {"id": "mart-customers"}, "targetAlias": "customers_x"}},
+            {"aliasPath": "customers_x.regions_x", "isCycleStub": False, "relationship": {
+                "sourceDataMart": {"id": "mart-customers"},
+                "targetDataMart": {"id": "mart-regions"}, "targetAlias": "regions_x"}},
+        ]}
+        self.id_lookup = {
+            "mart-orders": ("Orders", "orders.md", ["order_id"]),
+            "mart-customers": ("Customers", "customers.md", ["customer_id"]),
+            "mart-regions": ("Regions", "regions.md", ["region_id"]),
+        }
+        self.mart = {
+            "id": "mart-orders", "title": "Orders",
+            "schema": {"fields": [{"name": "customer_id", "type": "STRING"}]},
+            "blendedFieldsConfig": {"sources": [
+                {"path": "customers_x", "alias": "Customers", "fields": {}},
+                {"path": "customers_x.regions_x", "alias": "Customers Regions",
+                 "description": "The home market of the ordering customer.", "fields": {}},
+            ]},
+        }
+        self.path_lookup = {"customers_x": ("Customers", "customers.md", ["customer_id"])}
+
+    def _render(self, mart=None):
+        mart = mart or self.mart
+        return export._render_joins_section(
+            mart, self.path_lookup,
+            export.build_join_index(self.graph, "mart-orders"),
+            export.build_target_index(self.graph, "mart-orders"),
+            self.id_lookup,
+            export.build_description_index(self.graph, "mart-orders"),
+            export.build_node_index(mart, self.graph, self.id_lookup))
+
+    def test_node_is_nested_under_the_join_it_is_reached_through(self):
+        out = self._render()
+        self.assertIn("  - [Customers Regions](./regions.md) — The home market of the "
+                      "ordering customer.\n", out)
+        # and it sits after its parent, not before it
+        self.assertLess(out.index("- [Customers]"), out.index("  - [Customers Regions]"))
+
+    def test_the_link_text_is_what_odm_calls_the_node(self):
+        """A reader importing this bundle copies the label instead of re-deriving it, so a
+        derived name travels too — otherwise the import risks a second source called
+        "Regions" where ODM shows "Customers Regions"."""
+        out = self._render()
+        self.assertIn("[Customers Regions](./regions.md)", out)
+
+    def test_an_authored_label_replaces_the_derived_one(self):
+        mart = json.loads(json.dumps(self.mart))
+        mart["blendedFieldsConfig"]["sources"][1]["alias"] = "Buyer Market"
+        out = self._render(mart)
+        self.assertIn("  - [Buyer Market](./regions.md) — The home market of the "
+                      "ordering customer.\n", out)
+        self.assertNotIn("Customers Regions", out)
+
+    def test_indent_is_two_spaces_per_hop(self):
+        graph = json.loads(json.dumps(self.graph))
+        graph["nodes"].append(
+            {"aliasPath": "customers_x.regions_x.orders_x", "isCycleStub": False,
+             "relationship": {"sourceDataMart": {"id": "mart-regions"},
+                              "targetDataMart": {"id": "mart-orders"},
+                              "targetAlias": "orders_x"}})
+        mart = json.loads(json.dumps(self.mart))
+        mart["blendedFieldsConfig"]["sources"].append(
+            {"path": "customers_x.regions_x.orders_x", "alias": "Customers Regions Orders",
+             "description": "Every order from that market.", "fields": {}})
+        nodes = export.build_node_index(mart, graph, self.id_lookup)
+        out = "\n".join(export._render_node_bullets("customers_x", nodes))
+        self.assertIn("  - [Customers Regions](./regions.md)", out)
+        self.assertIn("    - [Customers Regions Orders](./orders.md) — Every order from "
+                      "that market.", out)
+
+    def test_excluded_and_depth_one_sources_are_not_nodes(self):
+        mart = json.loads(json.dumps(self.mart))
+        mart["blendedFieldsConfig"]["sources"][1]["isExcluded"] = True
+        self.assertEqual(export.build_node_index(mart, self.graph, self.id_lookup), {})
+
+    def test_a_nested_bullet_is_invisible_to_a_line_anchored_join_parser(self):
+        """The safety property, asserted rather than assumed: the strict OKF join regex both
+        readers use matches only at the line start, so a nested bullet is never taken for a
+        direct join of this mart."""
+        strict = re.compile(r"^- \[[^\]]*\]\(\./(.+?)\.md\)")
+        nested = [ln for ln in self._render().split("\n") if ln.startswith("  - [")]
+        self.assertTrue(nested)
+        for line in nested:
+            self.assertIsNone(strict.match(line))
