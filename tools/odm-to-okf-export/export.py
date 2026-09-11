@@ -230,6 +230,54 @@ def build_join_index(graph, mart_id):
     return index
 
 
+ANY_VALUE = "ANY_VALUE"
+
+
+def build_cardinality_index(mart, graph, id_lookup):
+    """Infer `[N:1]`-style cardinality for a mart's DIRECT joins: {path: tag}.
+
+    ODM stores no cardinality of its own, but it stores the consequence of one. A join whose
+    target contributes at most one row per source row is deduplicated with ANY_VALUE, and
+    anything that fans out gets a real collapse (SUM, STRING_AGG, …) — so the blended config
+    says which side is "1" as clearly as a diagram would. Where a source carries no dedup at
+    all, the structure answers instead: a join landing exactly on the target's primary key
+    reaches one row.
+
+    The source side is read from the keys alone: keys that are exactly this mart's primary
+    key mean one row per target row. Recovering 1:1 and 1:N this way is what keeps the tag
+    the same shape a human would have written.
+    """
+    sources = {s.get("path"): s for s in
+               ((mart.get("blendedFieldsConfig") or {}).get("sources") or [])}
+    local_pks = {f.get("name") for f in (mart.get("schema") or {}).get("fields", [])
+                 if isinstance(f, dict) and f.get("isPrimaryKey")}
+    out = {}
+    for node in (graph or {}).get("nodes") or []:
+        if not isinstance(node, dict) or node.get("isCycleStub"):
+            continue
+        rel = node.get("relationship") or {}
+        path = node.get("aliasPath") or ""
+        target_id = (rel.get("targetDataMart") or {}).get("id")
+        if not path or "." in path or (rel.get("sourceDataMart") or {}).get("id") != mart.get("id"):
+            continue
+        if target_id not in (id_lookup or {}):
+            continue
+        pairs = [(c.get("sourceFieldName"), c.get("targetFieldName"))
+                 for c in rel.get("joinConditions") or [] if isinstance(c, dict)]
+        if not pairs:
+            continue
+        fields = (sources.get(path) or {}).get("fields") or {}
+        if fields:
+            target_one = all((f or {}).get("aggregateFunction") == ANY_VALUE
+                             for f in fields.values())
+        else:
+            target_pks = set(id_lookup[target_id][2] or [])
+            target_one = bool(target_pks) and {right for _, right in pairs} == target_pks
+        source_one = bool(local_pks) and {left for left, _ in pairs} == local_pks
+        out[path] = f"{'1' if source_one else 'N'}:{'1' if target_one else 'N'}"
+    return out
+
+
 def build_node_index(mart, graph, id_lookup):
     """Join nodes deeper than one hop: {live path: {target_file, target_title, alias, description}}.
 
@@ -638,7 +686,8 @@ def _fk_lookup(mart, path_lookup, join_index=None, target_index=None, id_lookup=
 
 
 def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
-                          id_lookup=None, description_index=None, node_index=None):
+                          id_lookup=None, description_index=None, node_index=None,
+                          cardinality_index=None):
     """Return a ## Joins markdown section, or empty string.
 
     Sources come from blendedFieldsConfig, plus any direct relationship edge the graph
@@ -672,6 +721,7 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
     id_lookup = id_lookup or {}
     description_index = description_index or {}
     node_index = node_index or {}
+    cardinality_index = cardinality_index or {}
 
     seen_paths = {s.get("path") for s in direct}
     for path in target_index:
@@ -694,6 +744,11 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
             if not pairs:
                 pairs = [(pk, pk) for pk in target_pks if pk in local_cols]
             cond = ", ".join(f"`{left} = {right}`" for left, right in pairs)
+            card = cardinality_index.get(src["path"])
+            if cond and card:
+                # The tag goes BEFORE the sentence on purpose: a reader takes the meaning to
+                # be whatever follows the last marker, so a trailing tag would swallow it.
+                cond = f"{cond} [{card}]"
             meaning = description_index.get(src["path"], "")
             tail = " — ".join(part for part in (cond, meaning) if part)
             lines.append(f"- [{alias}](./{fname}) — {tail}" if tail
@@ -791,7 +846,7 @@ def collect_bundles(out_dir):
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
                  join_indexes=None, project_description=None, preserved_regions=("", ""),
                  bundle_url=None, target_indexes=None, description_indexes=None,
-                 node_indexes=None):
+                 node_indexes=None, cardinality_indexes=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
     project_folder: slugified OWOX project name used as the subfolder name.
     join_indexes: {mart_id: build_join_index(...)} for real join keys.
@@ -801,6 +856,8 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     an analyst wrote on each edge, which nothing else in the bundle records.
     node_indexes: {mart_id: build_node_index(...)} for the label and meaning of each join
     node deeper than one hop, rendered as the nested bullets of the Joins section.
+    cardinality_indexes: {mart_id: build_cardinality_index(...)} for the `[N:1]` tag, which
+    is what tells a reader (and an importer) whether a joined field fans out.
     preserved_regions: (before, after) manual text to keep around the regenerated
     index body across re-export, from read_preserved_regions().
     bundle_url: public GitHub tree URL of this bundle; when set, the model index gets a
@@ -812,6 +869,7 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     target_indexes = target_indexes or {}
     description_indexes = description_indexes or {}
     node_indexes = node_indexes or {}
+    cardinality_indexes = cardinality_indexes or {}
 
     path_lookup = _build_path_lookup(marts_with_docs)
     id_lookup = _build_id_lookup(marts_with_docs)
@@ -823,7 +881,8 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
         joins = _render_joins_section(mart, path_lookup, join_indexes.get(mart_id),
                                       target_indexes.get(mart_id), id_lookup,
                                       description_indexes.get(mart_id),
-                                      node_indexes.get(mart_id))
+                                      node_indexes.get(mart_id),
+                                      cardinality_indexes.get(mart_id))
         if joins:
             doc = doc.rstrip("\n") + "\n\n" + joins
         with open(os.path.join(marts_dir, fname), "w", encoding="utf-8") as fh:
@@ -1507,6 +1566,10 @@ def main():
                          node_indexes={
                              m.get("id"): build_node_index(m, graphs.get(m.get("id")),
                                                            id_lookup_pre)
+                             for m, _ in marts_with_docs},
+                         cardinality_indexes={
+                             m.get("id"): build_cardinality_index(m, graphs.get(m.get("id")),
+                                                                  id_lookup_pre)
                              for m, _ in marts_with_docs})
     print(f"Wrote OKF bundle to {args.out}/{project_folder}/ ({count} concept docs).")
 
