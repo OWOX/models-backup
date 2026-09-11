@@ -879,3 +879,83 @@ class JoinNodeTreeTests(unittest.TestCase):
         self.assertTrue(nested)
         for line in nested:
             self.assertIsNone(strict.match(line))
+
+
+class CardinalityTagTests(unittest.TestCase):
+    """ODM stores no cardinality, but it stores the consequence of one: a join that reaches a
+    single row is deduplicated with ANY_VALUE, and anything that fans out gets a real
+    collapse. That is enough to write the tag back, and the tag is what tells an importer
+    whether a joined field multiplies rows."""
+
+    def setUp(self):
+        self.graph = {"nodes": [
+            {"aliasPath": "customers_x", "isCycleStub": False, "relationship": {
+                "sourceDataMart": {"id": "mart-orders"},
+                "targetDataMart": {"id": "mart-customers"}, "targetAlias": "customers_x",
+                "joinConditions": [{"sourceFieldName": "customer_id",
+                                    "targetFieldName": "customer_id"}]}},
+        ]}
+        self.id_lookup = {
+            "mart-orders": ("Orders", "orders.md", ["order_id"]),
+            "mart-customers": ("Customers", "customers.md", ["customer_id"]),
+        }
+
+    def _mart(self, fields=None, pk="order_id"):
+        source = {"path": "customers_x", "alias": "Customers"}
+        if fields is not None:
+            source["fields"] = fields
+        return {
+            "id": "mart-orders", "title": "Orders",
+            "schema": {"fields": [
+                {"name": "order_id", "type": "STRING", "isPrimaryKey": pk == "order_id"},
+                {"name": "customer_id", "type": "STRING",
+                 "isPrimaryKey": pk == "customer_id"},
+            ]},
+            "blendedFieldsConfig": {"sources": [source]},
+        }
+
+    def test_any_value_dedup_means_the_target_side_is_one(self):
+        mart = self._mart({"customer_id": {"aggregateFunction": "ANY_VALUE"},
+                           "name": {"aggregateFunction": "ANY_VALUE"}})
+        self.assertEqual(export.build_cardinality_index(mart, self.graph, self.id_lookup),
+                         {"customers_x": "N:1"})
+
+    def test_a_collapsing_dedup_means_the_target_fans_out(self):
+        mart = self._mart({"customer_id": {"aggregateFunction": "COUNT_DISTINCT"},
+                           "spend": {"aggregateFunction": "SUM"}})
+        self.assertEqual(export.build_cardinality_index(mart, self.graph, self.id_lookup),
+                         {"customers_x": "N:N"})
+
+    def test_keys_on_the_source_primary_key_make_the_source_side_one(self):
+        mart = self._mart({"customer_id": {"aggregateFunction": "ANY_VALUE"}},
+                          pk="customer_id")
+        self.assertEqual(export.build_cardinality_index(mart, self.graph, self.id_lookup),
+                         {"customers_x": "1:1"})
+
+    def test_without_dedup_the_target_primary_key_answers_instead(self):
+        """A mart whose config names no dedup still has structure: a join landing exactly on
+        the target's primary key reaches one row."""
+        self.assertEqual(export.build_cardinality_index(self._mart(), self.graph, self.id_lookup),
+                         {"customers_x": "N:1"})
+
+    def test_the_tag_is_rendered_before_the_description(self):
+        """A reader takes the meaning to be whatever follows the last marker, so a trailing
+        tag would swallow the sentence."""
+        mart = self._mart({"customer_id": {"aggregateFunction": "ANY_VALUE"}})
+        out = export._render_joins_section(
+            mart, {"customers_x": ("Customers", "customers.md", ["customer_id"])},
+            export.build_join_index(self.graph, "mart-orders"),
+            export.build_target_index(self.graph, "mart-orders"),
+            self.id_lookup,
+            {"customers_x": "Who placed the order."},
+            {},
+            export.build_cardinality_index(mart, self.graph, self.id_lookup))
+        self.assertIn("- [Customers](./customers.md) — `customer_id = customer_id` [N:1] — "
+                      "Who placed the order.\n", out)
+
+    def test_a_keyless_join_gets_no_tag(self):
+        graph = {"nodes": [{"aliasPath": "customers_x", "isCycleStub": False, "relationship": {
+            "sourceDataMart": {"id": "mart-orders"},
+            "targetDataMart": {"id": "mart-customers"}, "targetAlias": "customers_x",
+            "joinConditions": []}}]}
+        self.assertEqual(export.build_cardinality_index(self._mart(), graph, self.id_lookup), {})
