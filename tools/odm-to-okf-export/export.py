@@ -44,11 +44,12 @@ EXCHANGE_PATH = "/api/auth/api-keys/exchange"
 DATA_MART_GET_PATH = "/api/data-marts/{id}"
 DATA_NDJSON_PATH = "/api/external/http-data/data-marts/{id}.ndjson"
 
-# Model authorship, hardcoded until per-model authors are wired through the pipeline.
-# Rendered as a clickable line in the model index BODY (under the Data Mart table), not in
-# frontmatter: GitHub shows frontmatter values as plain text, so markdown links only become
-# clickable in the body. Each entry is a markdown link.
-MODEL_AUTHORS = [
+# Model authorship, rendered as a clickable line in the model index BODY (under the Data
+# Mart table), not in frontmatter: GitHub shows frontmatter values as plain text, so
+# markdown links only become clickable in the body. Each entry is a markdown link.
+# A model elicited from an outside expert overrides this with --authors, so a re-export
+# cannot quietly reassign the credit.
+DEFAULT_MODEL_AUTHORS = [
     "[Vlad Flaks](https://github.com/vladflaks)",
     "[Rus Obolonsky](https://github.com/Obolrus)",
 ]
@@ -846,7 +847,7 @@ def collect_bundles(out_dir):
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
                  join_indexes=None, project_description=None, preserved_regions=("", ""),
                  bundle_url=None, target_indexes=None, description_indexes=None,
-                 node_indexes=None, cardinality_indexes=None):
+                 node_indexes=None, cardinality_indexes=None, authors=None):
     """marts_with_docs: list of (mart_dict, rendered_markdown).
     project_folder: slugified OWOX project name used as the subfolder name.
     join_indexes: {mart_id: build_join_index(...)} for real join keys.
@@ -861,10 +862,13 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
     preserved_regions: (before, after) manual text to keep around the regenerated
     index body across re-export, from read_preserved_regions().
     bundle_url: public GitHub tree URL of this bundle; when set, the model index gets a
-    one-click "Explore on canvas" CTA deeplinking into the free OWOX model canvas."""
+    one-click "Explore on canvas" CTA deeplinking into the free OWOX model canvas.
+    authors: markdown-link entries crediting the model's authors. Defaults to
+    DEFAULT_MODEL_AUTHORS (the pipeline's maintainers) when omitted."""
     marts_dir = os.path.join(out_dir, project_folder)
     os.makedirs(marts_dir, exist_ok=True)
     ts = _Raw(now_iso())
+    authors = authors or DEFAULT_MODEL_AUTHORS
     join_indexes = join_indexes or {}
     target_indexes = target_indexes or {}
     description_indexes = description_indexes or {}
@@ -907,7 +911,7 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
         di += [before, ""]
     # No "# {project_title}" heading — the title is already in the frontmatter. The Data
     # Mart table is the main content; example questions come after it.
-    di += [GEN_START, "", f"**Authors:** {', '.join(MODEL_AUTHORS)}", "",
+    di += [GEN_START, "", f"**Authors:** {', '.join(authors)}", "",
            "| Data Mart | Fields |", "|-----------|--------|"]
     for title, fname, nfields in sorted(index_rows):
         di.append(f"| [{_safe_cell(title)}](./{fname}) | {nfields} |")
@@ -1477,6 +1481,9 @@ def main():
                         "the model index gets an 'Explore on canvas' deeplink ($BUNDLE_URL).")
     p.add_argument("--title", default=os.environ.get("BUNDLE_TITLE"),
                    help="Override the bundle display title (default: the OWOX project title).")
+    p.add_argument("--authors", default=os.environ.get("BUNDLE_AUTHORS", ""),
+                   help="Comma-separated markdown links crediting the model's authors "
+                        "($BUNDLE_AUTHORS). Defaults to the pipeline's maintainers.")
     # GitHub
     p.add_argument("--push", action="store_true", help="Push the bundle to GitHub.")
     p.add_argument("--repo", default=os.environ.get("GITHUB_REPO"),
@@ -1495,6 +1502,8 @@ def main():
     project_description = (get_project_settings(api_origin, headers) or {}).get("description")
     project_title = project_title_from_token(token)
     display_title = args.title or project_title or "Data Marts"
+    authors = [a.strip() for a in (args.authors or "").split(",") if a.strip()] \
+        or DEFAULT_MODEL_AUTHORS
     project_folder = slugify(args.folder, "data-marts") if args.folder else slugify(project_title, "data-marts")
     print(f"  origin: {api_origin}")
     print(f"  project: {project_title or '(unknown)'} → folder: {project_folder}")
@@ -1563,6 +1572,7 @@ def main():
                          preserved_regions=preserved_regions, bundle_url=args.bundle_url,
                          target_indexes=target_indexes,
                          description_indexes=description_indexes,
+                         authors=authors,
                          node_indexes={
                              m.get("id"): build_node_index(m, graphs.get(m.get("id")),
                                                            id_lookup_pre)

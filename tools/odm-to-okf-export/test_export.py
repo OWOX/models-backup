@@ -708,6 +708,24 @@ def test_index_authors_are_a_clickable_body_line_under_the_table():
     assert body.index("**Authors:**") < body.index("| Data Mart | Fields |")
 
 
+def test_index_authors_override_replaces_the_default():
+    """A model elicited from an outside expert must not carry the pipeline maintainers'
+    names — --authors (threaded to write_bundle as `authors`) replaces the default
+    entirely, it does not add to it."""
+    from export import write_bundle
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        marts = [({"id": "M1", "title": "Customer", "schema": {"fields": [{"name": "a"}]}}, "# Customer\n")]
+        write_bundle(d, marts, "healthcare-clinic-attribution", "Healthcare Clinic Attribution",
+                     project_description="A clinic network.",
+                     authors=["[Jane Expert](https://example.com/jane)"])
+        idx = open(os.path.join(d, "healthcare-clinic-attribution", "index.md"), encoding="utf-8").read()
+    body = idx.split("---", 2)[2]
+    assert "**Authors:** [Jane Expert](https://example.com/jane)" in body
+    assert "Vlad Flaks" not in body
+    assert "Rus Obolonsky" not in body
+
+
 def test_index_canvas_cta_rendered_only_with_bundle_url():
     from export import write_bundle, CANVAS_MODEL_URL_PREFIX
     import tempfile, os
