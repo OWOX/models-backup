@@ -495,6 +495,11 @@ def extract_columns(schema):
     for f in fields:
         if not isinstance(f, dict):
             continue
+        if isinstance(f.get("calculated"), dict):
+            # No column stands behind a formula, so it is not a row of this table. It gets
+            # its own section (render_calculated_section); listing it here would both drop
+            # the formula and name a column the warehouse object does not carry.
+            continue
         name = f.get("name") or f.get("alias") or f.get("field") or ""
         ftype = f.get("type") or f.get("dataType") or f.get("mode") or ""
         alias = f.get("alias") or ""
@@ -502,6 +507,68 @@ def extract_columns(schema):
         is_pk = bool(f.get("isPrimaryKey"))
         cols.append((str(name), str(ftype), str(alias), str(desc), is_pk))
     return cols
+
+
+def extract_calculated(schema):
+    """(name, type, alias, description, formula) for every calculated field in a schema.
+
+    A calculated field's value comes from a formula over the mart's own fields rather than
+    from a stored column, so it travels in its own section instead of the schema table."""
+    if not isinstance(schema, dict):
+        return []
+    fields = next(
+        (schema[k] for k in ("fields", "columns", "schema") if isinstance(schema.get(k), list)),
+        None,
+    )
+    if fields is None:
+        return []
+    out = []
+    for f in fields:
+        if not isinstance(f, dict):
+            continue
+        calc = f.get("calculated")
+        if not isinstance(calc, dict) or not str(calc.get("formula") or "").strip():
+            continue
+        out.append((str(f.get("name") or ""), str(f.get("type") or ""),
+                    str(f.get("alias") or ""), str(f.get("description") or ""),
+                    str(calc["formula"])))
+    return out
+
+
+def _formula_fence(formula):
+    """An opening fence long enough to hold this formula.
+
+    A warehouse formula may itself contain a run of backticks — a quoted identifier, or a
+    fence someone pasted into a comment. CommonMark closes a block on the first run of at
+    least the opening length, so the opener has to be longer than the longest run inside."""
+    longest = max((len(m) for m in re.findall(r"`+", formula)), default=0)
+    return "`" * max(3, longest + 1)
+
+
+def render_calculated_section(schema):
+    """A `# Calculated Fields` section, or empty string.
+
+    The formula rides in a FENCED block rather than inline backticks: warehouse formulas are
+    routinely multi-line and may contain a backtick, and neither survives a single-line
+    bullet that quotes the formula inline. The fence is indented under its bullet, so a reader that
+    does not know this section sees ordinary indented text and skips it unharmed."""
+    calculated = extract_calculated(schema)
+    if not calculated:
+        return ""
+    out = ["# Calculated Fields", ""]
+    for name, ftype, alias, desc, formula in calculated:
+        out.append(f"### {name}")
+        if alias.strip():
+            out.append(f"- **Alias:** {alias}")
+        if ftype.strip():
+            out.append(f"- **Type:** {ftype}")
+        if desc.strip():
+            out.append(f"- **Description:** {_schema_cell(desc)}")
+        fence = _formula_fence(formula)
+        out += ["- **Formula:**", "", f"  {fence}sql"]
+        out += [f"  {line}" if line.strip() else "" for line in formula.split("\n")]
+        out += [f"  {fence}", ""]
+    return "\n".join(out).rstrip()
 
 
 def _schema_cell(text):
@@ -573,6 +640,10 @@ def render_data_mart_doc(mart, api_origin, sample_rows, fk=None):
     schema_section = render_schema_section(mart.get("schema"), fk=fk)
     if schema_section:
         body += [schema_section, ""]
+
+    calculated_section = render_calculated_section(mart.get("schema"))
+    if calculated_section:
+        body += [calculated_section, ""]
 
     if sample_rows:
         preview = "\n".join(json.dumps(r, ensure_ascii=False) for r in sample_rows)

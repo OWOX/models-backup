@@ -977,3 +977,49 @@ class CardinalityTagTests(unittest.TestCase):
             "targetDataMart": {"id": "mart-customers"}, "targetAlias": "customers_x",
             "joinConditions": []}}]}
         self.assertEqual(export.build_cardinality_index(self._mart(), graph, self.id_lookup), {})
+
+
+class CalculatedFieldsTests(unittest.TestCase):
+    """A calculated field has no column in the warehouse: its value comes from a formula over
+    the mart's own fields. It therefore travels in its own section rather than as a row of the
+    schema table, where it would both lose the formula and name a column the object lacks."""
+
+    SCHEMA = {"fields": [
+        {"name": "clicks", "type": "INTEGER", "alias": "Clicks", "description": "Clicks."},
+        {"name": "ctr", "type": "FLOAT", "alias": "CTR", "description": "Click-through rate.",
+         "calculated": {"formula": 'SAFE_DIVIDE(SUM({{ref field="clicks"}}), '
+                                   'SUM({{ref field="impressions"}}))',
+                        "level": "metric", "warehouseValidation": "passed"}},
+    ]}
+
+    def test_a_formula_is_not_a_row_of_the_schema_table(self):
+        table = export.render_schema_section(self.SCHEMA)
+        self.assertIn("`clicks`", table)
+        self.assertNotIn("`ctr`", table)
+
+    def test_the_section_carries_name_type_alias_description_and_formula(self):
+        section = export.render_calculated_section(self.SCHEMA)
+        self.assertIn("# Calculated Fields", section)
+        self.assertIn("### ctr", section)
+        self.assertIn("- **Alias:** CTR", section)
+        self.assertIn("- **Type:** FLOAT", section)
+        self.assertIn("- **Description:** Click-through rate.", section)
+        self.assertIn('SAFE_DIVIDE(SUM({{ref field="clicks"}})', section)
+
+    def test_a_mart_with_no_formulas_emits_no_section(self):
+        self.assertEqual(export.render_calculated_section(
+            {"fields": [{"name": "clicks", "type": "INTEGER"}]}), "")
+
+    def test_a_multi_line_formula_keeps_its_interior_indentation(self):
+        formula = 'SAFE_DIVIDE(\n  COUNTIF({{ref field="a"}}),\n  COUNTIF({{ref field="b"}})\n)'
+        section = export.render_calculated_section(
+            {"fields": [{"name": "rate", "type": "FLOAT", "calculated": {"formula": formula}}]})
+        self.assertIn('  SAFE_DIVIDE(\n    COUNTIF({{ref field="a"}}),', section)
+
+    def test_a_formula_containing_backticks_gets_a_longer_fence(self):
+        """CommonMark closes a block on the first run of at least the opening length, so a
+        formula carrying a fence of its own needs a longer opener or the block ends early."""
+        formula = 'IF({{ref field="x"}} = ```q```, 1, 0)'
+        section = export.render_calculated_section(
+            {"fields": [{"name": "flag", "type": "INTEGER", "calculated": {"formula": formula}}]})
+        self.assertIn("````sql", section)
