@@ -616,6 +616,28 @@ def calculated_join_aliases(schema):
     return out
 
 
+def formula_hop_aliases(marts, target_indexes):
+    """{mart id: direct join aliases} for EVERY hop of every joined path a formula reads.
+
+    A path is one `as` per hop, not one per formula: `purchases_e_commerce.products_e_commerce`
+    read from Orders walks Orders' join to Purchases and then PURCHASES' join to Products,
+    and the second alias lives on a line of purchases.md. OWOX froze both at creation, so
+    neither need match what the canvas derives from the target's title (`products`). Each hop
+    is resolved by id through the intermediate mart's own target index; a hop that cannot be
+    resolved ends the walk, since nothing past it can be named."""
+    out = {}
+    for mart in marts:
+        for _name, _type, _alias, _desc, formula, _level in extract_calculated(mart.get("schema")):
+            for path in formula_join_paths(formula):
+                current = mart.get("id")
+                for segment in path.split("."):
+                    out.setdefault(current, set()).add(segment)
+                    current = (target_indexes.get(current) or {}).get(segment)
+                    if not current:
+                        break
+    return out
+
+
 def render_calculated_section(schema):
     """A `## Calculated fields` section in the OWOX model canvas's format, or empty string.
 
@@ -843,7 +865,7 @@ def _fk_lookup(mart, path_lookup, join_index=None, target_index=None, id_lookup=
 
 def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
                           id_lookup=None, description_index=None, node_index=None,
-                          cardinality_index=None):
+                          cardinality_index=None, formula_aliases=None):
     """Return a ## Joins markdown section, or empty string.
 
     Sources come from blendedFieldsConfig, plus any direct relationship edge the graph
@@ -893,7 +915,9 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
         return ""
     local_cols = {f.get("name") for f in (mart.get("schema") or {}).get("fields", [])
                   if isinstance(f, dict)}
-    formula_aliases = calculated_join_aliases(mart.get("schema"))
+    # This mart's own formulas name their first hop; `formula_aliases` adds the hops that
+    # other marts' formulas take THROUGH this one (see formula_hop_aliases).
+    formula_aliases = calculated_join_aliases(mart.get("schema")) | set(formula_aliases or ())
     lines = ["## Joins", ""]
     for src in direct:
         raw_alias = src.get("alias") or src["path"]
@@ -1041,6 +1065,7 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
 
     path_lookup = _build_path_lookup(marts_with_docs)
     id_lookup = _build_id_lookup(marts_with_docs)
+    hop_aliases = formula_hop_aliases([m for m, _doc in marts_with_docs], target_indexes)
 
     index_rows = []
     for mart, doc in marts_with_docs:
@@ -1050,7 +1075,8 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
                                       target_indexes.get(mart_id), id_lookup,
                                       description_indexes.get(mart_id),
                                       node_indexes.get(mart_id),
-                                      cardinality_indexes.get(mart_id))
+                                      cardinality_indexes.get(mart_id),
+                                      hop_aliases.get(mart_id))
         if joins:
             doc = doc.rstrip("\n") + "\n\n" + joins
         with open(os.path.join(marts_dir, fname), "w", encoding="utf-8") as fh:

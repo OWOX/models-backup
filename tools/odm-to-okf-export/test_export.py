@@ -1101,6 +1101,39 @@ class CalculatedFieldsTests(unittest.TestCase):
             {"purchases"})
 
 
+    def test_every_hop_of_a_deeper_path_carries_its_alias_on_its_own_mart(self):
+        """`purchases_e_commerce.products_e_commerce` read from Orders takes Orders' join to
+        Purchases and then Purchases' join to Products. Both aliases were frozen by OWOX and
+        neither is what the canvas derives from a title (`purchases`, `products`), so each must
+        be written — the second one on a line of purchases.md, not orders.md."""
+        orders = {"id": "O", "title": "Orders", "schema": {"fields": [
+            {"name": "order_id", "type": "STRING", "isPrimaryKey": True},
+            {"name": "distinct_products", "type": "INTEGER", "calculated": {
+                "formula": 'COUNT(DISTINCT {{ref path="purchases_e_commerce.products_e_commerce" '
+                           'field="product_id"}})'}}]},
+            "blendedFieldsConfig": {"sources": [
+                {"path": "purchases_e_commerce", "alias": "Purchases", "fields": {}}]}}
+        purchases = {"id": "PU", "title": "Purchases", "schema": {"fields": [
+            {"name": "order_id", "type": "STRING"}, {"name": "product_id", "type": "STRING"}]},
+            "blendedFieldsConfig": {"sources": [
+                {"path": "orders_e_commerce", "alias": "Orders", "fields": {}},
+                {"path": "products_e_commerce", "alias": "Products", "fields": {}}]}}
+        products = {"id": "PR", "title": "Products", "schema": {"fields": [
+            {"name": "product_id", "type": "STRING", "isPrimaryKey": True}]}}
+        target_indexes = {"O": {"purchases_e_commerce": "PU"},
+                          "PU": {"orders_e_commerce": "O", "products_e_commerce": "PR"}}
+        self.assertEqual(export.formula_hop_aliases([orders, purchases, products], target_indexes),
+                         {"O": {"purchases_e_commerce"}, "PU": {"products_e_commerce"}})
+        with tempfile.TemporaryDirectory() as d:
+            export.write_bundle(d, [(m, f"# {m['title']}\n") for m in (orders, purchases, products)],
+                                "shop", "Shop", target_indexes=target_indexes)
+            read = lambda f: open(os.path.join(d, "shop", f), encoding="utf-8").read()
+            self.assertIn("- [Purchases](./purchases.md) as `purchases_e_commerce`", read("orders.md"))
+            self.assertIn("- [Products](./products.md) as `products_e_commerce`", read("purchases.md"))
+            # A hop no formula takes stays as it was.
+            self.assertIn("- [Orders](./orders.md)", read("purchases.md"))
+            self.assertNotIn("as `orders_e_commerce`", read("purchases.md"))
+
 # The canvas's own reader, ported line for line from OWOX/models
 # packages/okf/src/parse.ts::parseCalculated, so these tests hold the exporter to what the
 # canvas actually accepts rather than to what this file believes it accepts.
