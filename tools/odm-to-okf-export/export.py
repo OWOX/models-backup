@@ -510,7 +510,7 @@ def extract_columns(schema):
 
 
 def extract_calculated(schema):
-    """(name, type, alias, description, formula) for every calculated field in a schema.
+    """(name, type, alias, description, formula, level) for every calculated field in a schema.
 
     A calculated field's value comes from a formula over the mart's own fields rather than
     from a stored column, so it travels in its own section instead of the schema table."""
@@ -531,43 +531,127 @@ def extract_calculated(schema):
             continue
         out.append((str(f.get("name") or ""), str(f.get("type") or ""),
                     str(f.get("alias") or ""), str(f.get("description") or ""),
-                    str(calc["formula"])))
+                    str(calc["formula"]), str(calc.get("level") or "")))
     return out
 
 
-def _formula_fence(formula):
-    """An opening fence long enough to hold this formula.
+# ODM stores a formula with `{{ref path="alias" field="x"}}` tags; an analyst — and the OWOX
+# model canvas, which imports these bundles — reads `alias.x`. Same rule as the canvas's
+# `renderOwoxRefs` (packages/okf/src/formula.ts), so what this writes is what it would render.
+_OWOX_REF_RE = re.compile(r"\{\{\s*ref\b([^}]*)\}\}")
+_REF_FIELD_RE = re.compile(r'field="([^"]*)"')
+_REF_PATH_RE = re.compile(r'path="([^"]*)"')
 
-    A warehouse formula may itself contain a run of backticks — a quoted identifier, or a
-    fence someone pasted into a comment. CommonMark closes a block on the first run of at
-    least the opening length, so the opener has to be longer than the longest run inside."""
-    longest = max((len(m) for m in re.findall(r"`+", formula)), default=0)
-    return "`" * max(3, longest + 1)
+
+def render_owox_refs(formula):
+    """A stored ODM formula as plain SQL: `{{ref field="x"}}` -> `x`, and
+    `{{ref path="a.b" field="x"}}` -> `a.b.x`."""
+    def _plain(m):
+        attrs = m.group(1)
+        field = _REF_FIELD_RE.search(attrs)
+        path = _REF_PATH_RE.search(attrs)
+        field = field.group(1) if field else ""
+        path = path.group(1) if path else ""
+        return "{}.{}".format(path, field) if path else field
+    return _OWOX_REF_RE.sub(_plain, formula)
+
+
+def formula_join_paths(formula):
+    """The `path` of every joined reference in a stored formula, in order of appearance."""
+    out = []
+    for m in _OWOX_REF_RE.finditer(formula):
+        path = _REF_PATH_RE.search(m.group(1))
+        if path and path.group(1) and path.group(1) not in out:
+            out.append(path.group(1))
+    return out
+
+
+# Every aggregate ODM recognises (the canvas's AGGREGATES list), for the level a header names
+# when the live field does not say. The level is informational — ODM re-derives it.
+_AGGREGATES = (
+    "SUM", "COUNT", "AVG", "MIN", "MAX", "STDDEV", "VARIANCE", "ANY_VALUE", "COUNTIF", "COUNT_IF",
+    "STRING_AGG", "APPROX_COUNT_DISTINCT", "APPROX_DISTINCT", "ARRAY_AGG", "LISTAGG",
+    "PERCENTILE_CONT", "PERCENTILE", "COLLECT_LIST",
+)
+_AGGREGATE_CALL_RE = re.compile(r"\b(?:{})\s*\(".format("|".join(_AGGREGATES)), re.I)
+
+
+def _code_only(sql):
+    """String literals and comments blanked out, so their contents never read as calls."""
+    blank = lambda m: re.sub(r"[^\n]", " ", m.group(0))
+    for pattern in (r"/\*[\s\S]*?\*/", r"--[^\n]*", r"'(?:[^'\\]|\\.)*'", r'"(?:[^"\\]|\\.)*"'):
+        sql = re.sub(pattern, blank, sql)
+    return sql
+
+
+def formula_level(formula, live_level=""):
+    """`Metric` or `Column` — the level ODM reported, else the canvas's own derivation."""
+    level = str(live_level or "").strip().lower()
+    if level not in ("metric", "column"):
+        level = "metric" if _AGGREGATE_CALL_RE.search(_code_only(formula)) else "column"
+    return level.capitalize()
+
+
+def _fence_safe(text):
+    """A line opening with three-plus backticks would close the fence early; a leading space
+    keeps it inert. The canvas serializer applies the same rule."""
+    return re.sub(r"^( {0,3})(`{3,})", r" \1\2", text, flags=re.M)
+
+
+def _escape_description_line(line):
+    """A description line that reads as a heading or as the alias line would end the section
+    or be taken as the alias on parse; a leading backslash keeps it inert (the canvas undoes it)."""
+    return "\\" + line if re.match(r"^\\*(#|- \*\*Alias:\*\*)", line) else line
+
+
+def calculated_join_aliases(schema):
+    """The direct join aliases this mart's formulas read through — the first segment of every
+    joined path. Each must be written on its join line (`as` and the alias in backticks), or
+    a reader that resolves `alias.field` against the joins (the canvas) cannot tell which
+    join is meant."""
+    out = set()
+    for _name, _type, _alias, _desc, formula, _level in extract_calculated(schema):
+        for path in formula_join_paths(formula):
+            out.add(path.split(".")[0])
+    return out
 
 
 def render_calculated_section(schema):
-    """A `# Calculated Fields` section, or empty string.
+    """A `## Calculated fields` section in the OWOX model canvas's format, or empty string.
 
-    The formula rides in a FENCED block rather than inline backticks: warehouse formulas are
-    routinely multi-line and may contain a backtick, and neither survives a single-line
-    bullet that quotes the formula inline. The fence is indented under its bullet, so a reader that
-    does not know this section sees ordinary indented text and skips it unharmed."""
+        ## Calculated fields
+
+        ### `name` · TYPE · Metric
+
+        - **Alias:** Label
+
+        Description paragraph.
+
+        ```sql
+        SAFE_DIVIDE(SUM(clicks), orders.order_count)
+        ```
+
+    The format is the canvas's (packages/web/public/okf-format.md in OWOX/models, read by
+    `parseCalculated` in packages/okf/src/parse.ts): an H2, a backticked name with its type
+    and level, the description as plain prose and one `sql` fence at column 0 holding plain
+    SQL — the stored `{{ref}}` tags rendered as `field` / `alias.field`. A section the canvas
+    does not recognise is skipped whole, which is how an earlier `# Calculated Fields` layout
+    imported zero formulas. Never part of the schema table."""
     calculated = extract_calculated(schema)
     if not calculated:
         return ""
-    out = ["# Calculated Fields", ""]
-    for name, ftype, alias, desc, formula in calculated:
-        out.append(f"### {name}")
+    out = ["## Calculated fields", ""]
+    for name, ftype, alias, desc, formula, level in calculated:
+        plain = render_owox_refs(formula).strip()
+        out += ["### `{}` · {} · {}".format(name, ftype.strip() or "NUMERIC",
+                                            formula_level(plain, level)), ""]
         if alias.strip():
-            out.append(f"- **Alias:** {alias}")
-        if ftype.strip():
-            out.append(f"- **Type:** {ftype}")
+            out += ["- **Alias:** {}".format(alias.strip()), ""]
         if desc.strip():
-            out.append(f"- **Description:** {_schema_cell(desc)}")
-        fence = _formula_fence(formula)
-        out += ["- **Formula:**", "", f"  {fence}sql"]
-        out += [f"  {line}" if line.strip() else "" for line in formula.split("\n")]
-        out += [f"  {fence}", ""]
+            out += [_escape_description_line(line)
+                    for line in _fence_safe(desc.strip()).split("\n")]
+            out.append("")
+        out += ["```sql", _fence_safe(plain), "```", ""]
     return "\n".join(out).rstrip()
 
 
@@ -773,6 +857,10 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
     or an API that withheld the graph) we fall back to the older heuristic: a column named
     exactly like the target's primary key. A link with neither stays bare, as before.
 
+    A join that a calculated field reads through carries its alias right after the link
+    (`as` and the path in backticks, the canvas's syntax), so the formula's `path.field`
+    resolves to it.
+
     A described edge also carries its business meaning as trailing text after the keys — an
     OKF parser that does not know about it reads the keys and the cardinality out of the
     line and ignores the rest, so the addition costs older readers nothing.
@@ -805,6 +893,7 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
         return ""
     local_cols = {f.get("name") for f in (mart.get("schema") or {}).get("fields", [])
                   if isinstance(f, dict)}
+    formula_aliases = calculated_join_aliases(mart.get("schema"))
     lines = ["## Joins", ""]
     for src in direct:
         raw_alias = src.get("alias") or src["path"]
@@ -823,8 +912,12 @@ def _render_joins_section(mart, path_lookup, join_index=None, target_index=None,
                 cond = f"{cond} [{card}]"
             meaning = description_index.get(src["path"], "")
             tail = " — ".join(part for part in (cond, meaning) if part)
-            lines.append(f"- [{alias}](./{fname}) — {tail}" if tail
-                         else f"- [{alias}](./{fname})")
+            link = f"[{alias}](./{fname})"
+            if src["path"] in formula_aliases:
+                # A formula names this join as `path.field`; the canvas resolves that alias
+                # against the `as` on the join line and otherwise derives one from the title.
+                link += f" as `{src['path']}`"
+            lines.append(f"- {link} — {tail}" if tail else f"- {link}")
             lines.extend(_render_node_bullets(src["path"], node_index))
         else:
             lines.append(f"- {alias}")

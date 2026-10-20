@@ -997,29 +997,161 @@ class CalculatedFieldsTests(unittest.TestCase):
         self.assertIn("`clicks`", table)
         self.assertNotIn("`ctr`", table)
 
-    def test_the_section_carries_name_type_alias_description_and_formula(self):
+    def test_the_section_is_written_in_the_canvas_format(self):
+        """The OWOX model canvas imports these bundles, and its parser skips a section whose
+        heading it does not recognise — whole, silently. An earlier `# Calculated Fields`
+        layout imported zero formulas that way."""
         section = export.render_calculated_section(self.SCHEMA)
-        self.assertIn("# Calculated Fields", section)
-        self.assertIn("### ctr", section)
-        self.assertIn("- **Alias:** CTR", section)
-        self.assertIn("- **Type:** FLOAT", section)
-        self.assertIn("- **Description:** Click-through rate.", section)
-        self.assertIn('SAFE_DIVIDE(SUM({{ref field="clicks"}})', section)
+        self.assertEqual(section, "\n".join([
+            "## Calculated fields",
+            "",
+            "### `ctr` · FLOAT · Metric",
+            "",
+            "- **Alias:** CTR",
+            "",
+            "Click-through rate.",
+            "",
+            "```sql",
+            "SAFE_DIVIDE(SUM(clicks), SUM(impressions))",
+            "```",
+        ]))
+
+    def test_the_canvas_parser_reads_every_part_back(self):
+        section = export.render_calculated_section(self.SCHEMA)
+        self.assertEqual(canvas_parse_calculated(section), [{
+            "name": "ctr", "type": "FLOAT", "alias": "CTR",
+            "description": "Click-through rate.",
+            "formula": "SAFE_DIVIDE(SUM(clicks), SUM(impressions))"}])
 
     def test_a_mart_with_no_formulas_emits_no_section(self):
         self.assertEqual(export.render_calculated_section(
             {"fields": [{"name": "clicks", "type": "INTEGER"}]}), "")
 
+    def test_stored_refs_are_rendered_as_plain_sql(self):
+        self.assertEqual(export.render_owox_refs(
+            'COUNT(DISTINCT {{ref path="purchases.products" field="product_id"}}) + '
+            '{{ ref field="x" }}'),
+            "COUNT(DISTINCT purchases.products.product_id) + x")
+
     def test_a_multi_line_formula_keeps_its_interior_indentation(self):
         formula = 'SAFE_DIVIDE(\n  COUNTIF({{ref field="a"}}),\n  COUNTIF({{ref field="b"}})\n)'
         section = export.render_calculated_section(
             {"fields": [{"name": "rate", "type": "FLOAT", "calculated": {"formula": formula}}]})
-        self.assertIn('  SAFE_DIVIDE(\n    COUNTIF({{ref field="a"}}),', section)
+        self.assertIn("```sql\nSAFE_DIVIDE(\n  COUNTIF(a),\n  COUNTIF(b)\n)\n```", section)
+        self.assertEqual(canvas_parse_calculated(section)[0]["formula"],
+                         "SAFE_DIVIDE(\n  COUNTIF(a),\n  COUNTIF(b)\n)")
 
-    def test_a_formula_containing_backticks_gets_a_longer_fence(self):
-        """CommonMark closes a block on the first run of at least the opening length, so a
-        formula carrying a fence of its own needs a longer opener or the block ends early."""
-        formula = 'IF({{ref field="x"}} = ```q```, 1, 0)'
+    def test_a_formula_line_opening_with_a_fence_is_kept_inert(self):
+        """The canvas closes the block on a bare ``` line and opens nothing longer, so a line
+        of the formula that starts with backticks gets one leading space — its own rule."""
+        formula = 'IF({{ref field="x"}} = 1,\n```q```, 0)'
         section = export.render_calculated_section(
             {"fields": [{"name": "flag", "type": "INTEGER", "calculated": {"formula": formula}}]})
-        self.assertIn("````sql", section)
+        self.assertEqual(canvas_parse_calculated(section)[0]["formula"],
+                         "IF(x = 1,\n ```q```, 0)")
+
+    def test_the_level_comes_from_odm_and_is_derived_when_absent(self):
+        section = export.render_calculated_section({"fields": [
+            {"name": "net", "type": "FLOAT", "calculated": {"formula": '{{ref field="a"}} - 1'}},
+            {"name": "total", "type": "FLOAT",
+             "calculated": {"formula": 'SUM({{ref field="a"}})'}},
+            {"name": "told", "type": "FLOAT",
+             "calculated": {"formula": '{{ref field="a"}}', "level": "metric"}},
+        ]})
+        self.assertIn("### `net` · FLOAT · Column", section)
+        self.assertIn("### `total` · FLOAT · Metric", section)
+        self.assertIn("### `told` · FLOAT · Metric", section)
+
+    def test_a_description_line_that_looks_like_markup_is_escaped(self):
+        section = export.render_calculated_section({"fields": [
+            {"name": "x", "type": "FLOAT", "description": "First.\n# not a heading\n- **Alias:** no",
+             "calculated": {"formula": '{{ref field="a"}}'}}]})
+        self.assertEqual(canvas_parse_calculated(section)[0]["description"],
+                         "First.\n# not a heading\n- **Alias:** no")
+
+    def test_a_join_a_formula_reads_through_carries_its_alias(self):
+        mart = {
+            "id": "mart-orders", "title": "Orders",
+            "schema": {"fields": [
+                {"name": "order_id", "type": "STRING", "isPrimaryKey": True},
+                {"name": "customer_id", "type": "STRING"},
+                {"name": "sku", "type": "STRING"},
+                {"name": "buyers", "type": "INTEGER", "calculated": {
+                    "formula": 'COUNT(DISTINCT {{ref path="customers" field="customer_id"}})'}},
+            ]},
+            "blendedFieldsConfig": {"sources": [
+                {"path": "customers", "alias": "Customers", "fields": {}},
+                {"path": "products", "alias": "Products", "fields": {}},
+            ]},
+        }
+        path_lookup = {
+            "customers": ("Customers", "customers.md", ["customer_id"]),
+            "products": ("Products", "products.md", ["product_code"]),
+        }
+        out = export._render_joins_section(mart, path_lookup, {})
+        self.assertIn("- [Customers](./customers.md) as `customers` — "
+                      "`customer_id = customer_id`", out)
+        # A join no formula names stays exactly as it was.
+        self.assertIn("- [Products](./products.md)\n", out)
+
+    def test_a_deeper_path_puts_the_alias_on_its_first_hop(self):
+        self.assertEqual(export.calculated_join_aliases({"fields": [
+            {"name": "n", "type": "INTEGER", "calculated": {
+                "formula": 'COUNT(DISTINCT {{ref path="purchases.products" field="id"}})'}}]}),
+            {"purchases"})
+
+
+# The canvas's own reader, ported line for line from OWOX/models
+# packages/okf/src/parse.ts::parseCalculated, so these tests hold the exporter to what the
+# canvas actually accepts rather than to what this file believes it accepts.
+_CANVAS_SECTION = re.compile(r"^##\s+Calculated fields\s*$", re.I)
+_CANVAS_END = re.compile(r"^#{1,2}\s")
+_CANVAS_HEADER = re.compile(r"^###\s+`([^`]+)`(?:\s*·\s*([^·]+?))?(?:\s*·\s*\w+)?\s*$")
+_CANVAS_ALIAS = re.compile(r"^- \*\*Alias:\*\*\s*(.+)$")
+
+
+def canvas_parse_calculated(body):
+    out, in_section, cur, desc, fence = [], False, None, [], None
+
+    def flush():
+        if cur is not None:
+            d = "\n".join(desc).strip()
+            if d:
+                cur["description"] = d
+            out.append(cur)
+
+    for ln in body.split("\n"):
+        if fence is not None:
+            if re.match(r"^```\s*$", ln):
+                cur["formula"] = "\n".join(fence).strip()
+                fence = None
+            else:
+                fence.append(ln)
+            continue
+        if _CANVAS_SECTION.match(ln):
+            in_section = True
+            continue
+        if not in_section:
+            continue
+        if _CANVAS_END.match(ln):
+            flush()
+            cur, desc, in_section = None, [], False
+            continue
+        h = _CANVAS_HEADER.match(ln)
+        if h:
+            flush()
+            cur, desc = {"name": h.group(1).strip(), "type": (h.group(2) or "NUMERIC").strip(),
+                         "formula": ""}, []
+            continue
+        if cur is None or cur["formula"]:
+            continue
+        if ln.startswith("```"):
+            fence = []
+            continue
+        a = _CANVAS_ALIAS.match(ln)
+        if a:
+            cur["alias"] = a.group(1).strip()
+            continue
+        desc.append(ln[1:] if re.match(r"^\\+(#|- \*\*Alias:\*\*)", ln) else ln)
+    flush()
+    return out
