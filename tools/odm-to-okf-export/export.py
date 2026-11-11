@@ -983,6 +983,8 @@ def read_frontmatter(path):
                 if line.startswith(" ") or not line.strip():
                     continue  # indented (or blank) block-scalar continuation line
                 in_block = False
+            if line[:1] in (" ", "\t"):
+                continue  # a nested key (e.g. a `sources:` entry's title) is not a top-level one
             key, sep, value = line.partition(":")
             if not sep:
                 continue
@@ -1017,19 +1019,57 @@ def read_preserved_regions(index_path):
     return body[:si].strip("\n"), body[ei + len(GEN_END):].strip("\n")
 
 
-def collect_bundles(out_dir):
-    """Return [(folder, title, concept_count), ...] for every bundle folder in out_dir."""
+# Bundles that describe what one connector loads live one level down, apart from the
+# industry models: bundles/sources/<slug>/. The root index lists them in their own section.
+SOURCES_FOLDER = "sources"
+
+
+def _bundles_in(out_dir, prefix=""):
     found = []
-    for folder in sorted(os.listdir(out_dir)):
-        bundle_dir = os.path.join(out_dir, folder)
+    base = os.path.join(out_dir, prefix) if prefix else out_dir
+    if not os.path.isdir(base):
+        return found
+    for folder in sorted(os.listdir(base)):
+        bundle_dir = os.path.join(base, folder)
         index_path = os.path.join(bundle_dir, "index.md")
         if not os.path.isdir(bundle_dir) or not os.path.isfile(index_path):
             continue
         title = read_frontmatter(index_path).get("title") or folder
         count = len([f for f in os.listdir(bundle_dir)
                      if f.endswith(".md") and f != "index.md"])
-        found.append((folder, title, count))
+        found.append((f"{prefix}/{folder}" if prefix else folder, title, count))
     return found
+
+
+def collect_bundles(out_dir):
+    """Return [(folder, title, concept_count), ...] for every bundle folder in out_dir:
+    the models first, then the data-source bundles as 'sources/<slug>'."""
+    return _bundles_in(out_dir) + _bundles_in(out_dir, SOURCES_FOLDER)
+
+
+def render_root_index(bundles, ts):
+    """The gallery's root index.md: every model, then a 'Data sources' section.
+
+    The canvas Templates gallery reads this file to list bundles, so a bundle missing
+    here is missing from the gallery."""
+    root = [render_frontmatter({
+        "title": "OKF Bundles",
+        "description": "OKF bundles generated from OWOX Data Marts.",
+        "tags": ["owox", "index"],
+        "type": "index",
+        "timestamp": ts,
+    }), "", "# OKF Bundles", "",
+        f"Generated {ts}.", ""]
+    row = "- [{title}](./{folder}/index.md) — {count} concept(s)"
+    sources_prefix = f"{SOURCES_FOLDER}/"
+    models = [b for b in bundles if not b[0].startswith(sources_prefix)]
+    sources = [b for b in bundles if b[0].startswith(sources_prefix)]
+    root += [row.format(folder=f, title=t, count=n) for f, t, n in models]
+    if sources:
+        root += ["", "## Data sources", ""]
+        root += [row.format(folder=f, title=t, count=n) for f, t, n in sources]
+    root.append("")
+    return "\n".join(root) + "\n"
 
 
 def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data Marts",
@@ -1121,20 +1161,8 @@ def write_bundle(out_dir, marts_with_docs, project_folder, project_title="Data M
         fh.write("\n".join(di) + "\n")
 
     # bundle root index.md — a catalog of every bundle in this directory
-    bundles = collect_bundles(out_dir)
-    root = [render_frontmatter({
-        "title": "OKF Bundles",
-        "description": "OKF bundles generated from OWOX Data Marts.",
-        "tags": ["owox", "index"],
-        "type": "index",
-        "timestamp": ts,
-    }), "", "# OKF Bundles", "",
-        f"Generated {ts}.", ""]
-    for folder, title, count in bundles:
-        root.append(f"- [{title}](./{folder}/index.md) — {count} concept(s)")
-    root.append("")
     with open(os.path.join(out_dir, "index.md"), "w", encoding="utf-8") as fh:
-        fh.write("\n".join(root) + "\n")
+        fh.write(render_root_index(collect_bundles(out_dir), ts))
 
     return len(index_rows)
 
