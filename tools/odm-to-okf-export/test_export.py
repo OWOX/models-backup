@@ -365,6 +365,56 @@ class CollectBundlesTests(unittest.TestCase):
         self.assertEqual([f for f, _, _ in export.collect_bundles(self.tmp)],
                          ["e-commerce", "saas"])
 
+    def test_lists_data_source_bundles_after_the_models(self):
+        # Data-source bundles live one level down, in bundles/sources/<slug>/; a
+        # flat scan skipped them, and the root index it rewrote dropped their rows.
+        self._write("sources/stripe", "Stripe", ["charges.md", "refunds.md"])
+        self._write("sources/facebook-ads", "Facebook Ads", ["ads.md"])
+        found = export.collect_bundles(self.tmp)
+        self.assertEqual([f for f, _, _ in found],
+                         ["e-commerce", "saas", "sources/facebook-ads", "sources/stripe"])
+        self.assertEqual(dict((f, (t, n)) for f, t, n in found)["sources/stripe"],
+                         ("Stripe", 2))
+
+
+class ReadFrontmatterTests(unittest.TestCase):
+    def test_nested_keys_do_not_shadow_top_level_ones(self):
+        # A connector bundle lists its sources with their own `title:`; the root index
+        # once showed the last source's title instead of the bundle's.
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        path = os.path.join(tmp, "index.md")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write('---\ntitle: "Stripe"\ndescription: |\n  Two lines\n  of text.\n'
+                     'type: "index"\nsources:\n  - id: "owox-connector"\n'
+                     '    title: "OWOX Data Marts — Stripe connector"\n---\n\n# x\n')
+        front = export.read_frontmatter(path)
+        self.assertEqual(front["title"], "Stripe")
+        self.assertEqual(front["type"], "index")
+
+
+class RenderRootIndexTests(unittest.TestCase):
+    TS = "2026-11-11T10:00:00Z"
+
+    def test_models_only(self):
+        text = export.render_root_index([("saas", "SaaS", 10)], self.TS)
+        self.assertIn("- [SaaS](./saas/index.md) — 10 concept(s)\n", text)
+        self.assertNotIn("## Data sources", text)
+
+    def test_data_sources_get_their_own_section(self):
+        text = export.render_root_index(
+            [("saas", "SaaS", 10), ("sources/stripe", "Stripe", 14)], self.TS)
+        models, sources = text.split("## Data sources")
+        self.assertIn("- [SaaS](./saas/index.md) — 10 concept(s)", models)
+        self.assertNotIn("Stripe", models)
+        self.assertIn("- [Stripe](./sources/stripe/index.md) — 14 concept(s)", sources)
+
+    def test_header_and_trailing_blank_line(self):
+        text = export.render_root_index([("saas", "SaaS", 10)], self.TS)
+        self.assertTrue(text.startswith("---\n"))
+        self.assertIn(f"Generated {self.TS}.", text)
+        self.assertTrue(text.endswith("concept(s)\n\n"))
+
 
 class BuildVizDataTests(unittest.TestCase):
     def setUp(self):
